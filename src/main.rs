@@ -1,5 +1,6 @@
 use std::{fs, io};
 use std::path::Path;
+use lofty::{Accessor, read_from_path, TaggedFileExt};
 
 fn main() -> Result<(), io::Error> {
     let test_path = Path::new("test_data/music");
@@ -17,9 +18,16 @@ fn traverse_dir(dir: &Path) -> io::Result<()> {
             if path.is_dir() {
                 traverse_dir(&path);
             } else {
-                println!("{:?}", path);
+                read_file(&path);
             }
         }
     }
     Ok(())
+}
+
+fn read_file(path: &Path) -> Result<lofty::TaggedFile, lofty::LoftyError>{
+    let file = read_from_path(path)?;
+    let tag = file.first_tag().unwrap();
+    println!("{:?}", tag.title().unwrap());
+    Ok(file)
 }

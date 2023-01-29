@@ -19,24 +19,20 @@ impl Track {
         let disc_number = tag.disk();
         let track_number = tag.track();
         Track {
-            artists: {
-                let mut temp_vec = vec![];
-                for artist in artists {
-                    temp_vec.push(artist.to_string());
-                }
-                temp_vec
-            },
-            albumartists: {
-                let mut temp_vec = vec![];
-                for artist in albumartists {
-                    temp_vec.push(artist.to_string());
-                }
-                temp_vec
-            },
+            artists: vectorize_tags(artists),
+            albumartists: vectorize_tags(albumartists),
             album: album.to_string(),
             title: title.to_string(),
             track_number,
             disc_number,
         }
     }
+}
+
+fn vectorize_tags<'a>(tags: impl Iterator<Item=&'a str> + Sized) -> Vec<String> {
+    let mut temp_vec = vec![];
+    for tag in tags {
+        temp_vec.push(tag.to_string());
+    }
+    temp_vec
 }

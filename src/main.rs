@@ -1,5 +1,4 @@
 use std::{fs, io};
-use std::fs::DirEntry;
 use std::path::Path;
 
 fn main() -> Result<(), io::Error> {

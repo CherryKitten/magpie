@@ -1,6 +1,6 @@
 use std::{fs, io};
 use std::path::Path;
-use lofty::{Accessor, read_from_path, Tag, TaggedFileExt, LoftyError};
+use lofty::{Accessor, read_from_path, Tag, TaggedFileExt, LoftyError, ItemKey};
 
 fn main() -> Result<(), io::Error> {
     let test_path = Path::new("test_data/music");
@@ -47,9 +47,9 @@ fn read_file(path: &Path) -> Result<Track, LoftyError> {
 
 #[derive(Debug)]
 struct Track {
-    artist: Vec<String>,
+    artists: Vec<String>,
     album: String,
-    //albumartist: Vec<String>,
+    albumartists: Vec<String>,
     title: String,
     track_number: Option<u32>,
     disc_number: Option<u32>,
@@ -57,14 +57,27 @@ struct Track {
 
 impl Track {
     fn new(tag: &Tag) -> Self {
-        let artist = tag.artist().unwrap();
+        let artists = tag.get_strings(&ItemKey::TrackArtist);
+        let albumartists = tag.get_strings(&ItemKey::AlbumArtist);
         let album = tag.album().unwrap();
         let title = tag.title().unwrap();
         let disc_number = tag.disk();
         let track_number = tag.track();
         Track {
-            artist: vec![artist.to_string()],
-            //albumartist: vec![],
+            artists: {
+                let mut temp_vec = vec![];
+                for artist in artists {
+                    temp_vec.push(artist.to_string());
+                }
+                temp_vec
+            },
+            albumartists: {
+                let mut temp_vec = vec![];
+                for artist in albumartists {
+                    temp_vec.push(artist.to_string());
+                }
+                temp_vec
+            },
             album: album.to_string(),
             title: title.to_string(),
             track_number,

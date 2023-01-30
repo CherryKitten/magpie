@@ -1,5 +1,5 @@
 use std::{fs, io};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use lofty::{LoftyError, read_from_path, TaggedFileExt};
 use crate::metadata::Track;
 
@@ -28,7 +28,7 @@ fn read_file(path: &Path) -> Result<Track, LoftyError> {
     return match file {
         Ok(file) => {
             let tag = file.first_tag().unwrap();
-            let track = Track::new(tag);
+            let track = Track::new(tag, PathBuf::from(path));
             Ok(track)
         }
         Err(e) => Err(e)

@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use lofty::{Accessor, ItemKey, Tag};
 
 #[derive(Debug)]
@@ -8,10 +9,17 @@ pub struct Track {
     title: String,
     track_number: Option<u32>,
     disc_number: Option<u32>,
+    pub(crate) path: PathBuf
+}
+
+pub struct Album {
+    title: String,
+    year: u32,
+    path: PathBuf,
 }
 
 impl Track {
-    pub fn new(tag: &Tag) -> Self {
+    pub fn new(tag: &Tag, path: PathBuf) -> Self {
         let artists = tag.get_strings(&ItemKey::TrackArtist);
         let albumartists = tag.get_strings(&ItemKey::AlbumArtist);
         let album = tag.album().unwrap();
@@ -25,6 +33,7 @@ impl Track {
             title: title.to_string(),
             track_number,
             disc_number,
+            path,
         }
     }
 }

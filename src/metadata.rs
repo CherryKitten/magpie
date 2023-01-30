@@ -1,7 +1,8 @@
 use std::path::PathBuf;
 use lofty::{Accessor, ItemKey, Tag};
+use serde::{Serialize};
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Serialize)]
 pub struct Track {
     artists: Vec<String>,
     album: String,

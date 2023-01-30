@@ -10,29 +10,12 @@ use crate::scanner::traverse_dir;
 
 struct AppState {
     app_name: String,
-    tracklist: Vec<String>,
+    tracklist: Vec<Track>,
 }
 
 #[get("/")]
 async fn index(data: web::Data<AppState>) -> impl Responder {
-    let mut body = "<html>\
-                                <head>\
-                                <title> Magpie</title>\
-                                </head>\
-                                <body>\
-                                    <ul>".to_string();
-
-    for track in &data.tracklist {
-        body.push_str(&("<li>".to_string() + track + "</li>"));
-    }
-
-    body = body + "</ul></body>";
-
-    let resp = HttpResponse::Ok()
-        .content_type("text/html")
-        .body(body);
-
-    resp
+    Json(data.tracklist.clone())
 }
 
 #[get("/hello/{name}")]
@@ -56,16 +39,10 @@ pub(crate) async fn main() -> std::io::Result<()> {
     let test_path = Path::new("test_data/music");
 
     let mut tracks = vec![];
-    let mut tracklist = vec![];
 
     println!("Hello, {}!", test_path.display());
 
     tracks.append(&mut traverse_dir(test_path).unwrap());
-    for track in tracks {
-        println!("{:?}", track);
-        let path = track.path.to_str().unwrap();
-        tracklist.push(path.clone().to_string());
-    }
 
     let mut builder = SslAcceptor::mozilla_intermediate(SslMethod::tls()).unwrap();
     builder
@@ -77,7 +54,7 @@ pub(crate) async fn main() -> std::io::Result<()> {
     HttpServer::new(move || App::new()
         .app_data(web::Data::new(AppState {
             app_name: String::from("Actix Web"),
-            tracklist: tracklist.clone(),
+            tracklist: tracks.clone(),
         }))
         .service(hello)
         .service(musictest)

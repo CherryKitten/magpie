@@ -1,6 +1,6 @@
-use std::path::PathBuf;
 use lofty::{Accessor, ItemKey, Tag};
-use serde::{Serialize};
+use serde::Serialize;
+use std::path::PathBuf;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct Track {
@@ -10,7 +10,7 @@ pub struct Track {
     title: String,
     track_number: Option<u32>,
     disc_number: Option<u32>,
-    pub(crate) path: PathBuf
+    pub(crate) path: PathBuf,
 }
 
 pub struct Album {
@@ -39,7 +39,7 @@ impl Track {
     }
 }
 
-fn vectorize_tags<'a>(tags: impl Iterator<Item=&'a str> + Sized) -> Vec<String> {
+fn vectorize_tags<'a>(tags: impl Iterator<Item = &'a str> + Sized) -> Vec<String> {
     let mut temp_vec = vec![];
     for tag in tags {
         temp_vec.push(tag.to_string());

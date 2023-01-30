@@ -1,7 +1,7 @@
-use std::{fs, io};
-use std::path::{Path, PathBuf};
-use lofty::{LoftyError, read_from_path, TaggedFileExt};
 use crate::metadata::Track;
+use lofty::{read_from_path, LoftyError, TaggedFileExt};
+use std::path::{Path, PathBuf};
+use std::{fs, io};
 
 pub fn traverse_dir(dir: &Path) -> io::Result<Vec<Track>> {
     let mut tracks = vec![];
@@ -15,7 +15,7 @@ pub fn traverse_dir(dir: &Path) -> io::Result<Vec<Track>> {
             } else {
                 match read_file(&path) {
                     Ok(track) => tracks.push(track),
-                    Err(_) => continue
+                    Err(_) => continue,
                 };
             }
         }
@@ -31,6 +31,6 @@ fn read_file(path: &Path) -> Result<Track, LoftyError> {
             let track = Track::new(tag, PathBuf::from(path));
             Ok(track)
         }
-        Err(e) => Err(e)
+        Err(e) => Err(e),
     };
 }

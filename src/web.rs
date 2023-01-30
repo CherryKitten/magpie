@@ -1,12 +1,12 @@
 use std::path::Path;
-use std::sync::Mutex;
-use actix_web::{App, get, HttpResponse, HttpResponseBuilder, HttpServer, Responder, web};
+
 use actix_files::NamedFile;
-use actix_web::http::{header, StatusCode};
-use actix_web::web::{Json, service};
-use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
+use actix_web::{get, web, App, HttpServer, Responder};
+
 use crate::metadata::Track;
 use crate::scanner::traverse_dir;
+use actix_web::web::Json;
+use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
 
 struct AppState {
     app_name: String,
@@ -48,19 +48,22 @@ pub(crate) async fn main() -> std::io::Result<()> {
     builder
         .set_private_key_file("test_data/key.pem", SslFiletype::PEM)
         .unwrap();
-    builder.set_certificate_chain_file("test_data/cert.pem").unwrap();
+    builder
+        .set_certificate_chain_file("test_data/cert.pem")
+        .unwrap();
 
-    println!("Starting Webserver on {host}: {port}");
-    HttpServer::new(move || App::new()
-        .app_data(web::Data::new(AppState {
-            app_name: String::from("Actix Web"),
-            tracklist: tracks.clone(),
-        }))
-        .service(hello)
-        .service(musictest)
-        .service(index)
-    )
-        .bind_openssl((host, port), builder)?
-        .run()
-        .await
+    println!("Starting Webserver on {host}:{port}");
+    HttpServer::new(move || {
+        App::new()
+            .app_data(web::Data::new(AppState {
+                app_name: String::from("Actix Web"),
+                tracklist: tracks.clone(),
+            }))
+            .service(hello)
+            .service(musictest)
+            .service(index)
+    })
+    .bind_openssl((host, port), builder)?
+    .run()
+    .await
 }

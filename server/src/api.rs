@@ -1,3 +1,4 @@
+use actix_cors::Cors;
 use std::path::Path;
 
 use actix_files::NamedFile;
@@ -27,16 +28,16 @@ async fn hello(name: web::Path<String>, data: web::Data<AppState>) -> impl Respo
 //#[get("/test/{path}")]
 #[get("/test")]
 async fn musictest() -> impl Responder {
-    NamedFile::open_async("./test_data/music/Bring Me The Horizon/Bring Me The Horizon - 2022 - sTraNgeRs/01. sTraNgeRs.flac").await
+    NamedFile::open_async("../../test_data/music/Bring Me The Horizon/Bring Me The Horizon - 2022 - sTraNgeRs/01. sTraNgeRs.flac").await
     //NamedFile::open_async(path.to_string()).await
 }
 
 #[actix_web::main]
 pub(crate) async fn main() -> std::io::Result<()> {
-    let host = "127.0.0.1";
+    let host = "localhost";
     let port = 8000;
 
-    let test_path = Path::new("test_data/music");
+    let test_path = Path::new("../test_data/music");
 
     let mut tracks = vec![];
 
@@ -46,14 +47,15 @@ pub(crate) async fn main() -> std::io::Result<()> {
 
     let mut builder = SslAcceptor::mozilla_intermediate(SslMethod::tls()).unwrap();
     builder
-        .set_private_key_file("test_data/key.pem", SslFiletype::PEM)
+        .set_private_key_file("../test_data/key.pem", SslFiletype::PEM)
         .unwrap();
     builder
-        .set_certificate_chain_file("test_data/cert.pem")
+        .set_certificate_chain_file("../test_data/cert.pem")
         .unwrap();
 
     println!("Starting Webserver on {host}:{port}");
     HttpServer::new(move || {
+        let cors = Cors::permissive().allow_any_header().allow_any_method().allow_any_origin();
         App::new()
             .app_data(web::Data::new(AppState {
                 app_name: String::from("Actix Web"),
@@ -62,6 +64,7 @@ pub(crate) async fn main() -> std::io::Result<()> {
             .service(hello)
             .service(musictest)
             .service(index)
+            .wrap(cors)
     })
     .bind_openssl((host, port), builder)?
     .run()

@@ -2,10 +2,10 @@ use std::io;
 
 mod metadata;
 mod scanner;
-mod web;
+mod api;
 
 fn main() -> Result<(), io::Error> {
-    web::main();
+    api::main();
 
     println!("Shutting down..");
     Ok(())

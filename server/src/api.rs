@@ -4,19 +4,21 @@ use std::path::Path;
 use actix_files::NamedFile;
 use actix_web::{get, web, App, HttpServer, Responder};
 
+use crate::db;
 use crate::metadata::Track;
 use crate::scanner::traverse_dir;
 use actix_web::web::Json;
+use diesel::SqliteConnection;
 use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
 
 struct AppState {
     app_name: String,
-    tracklist: Vec<Track>,
+    conn: SqliteConnection,
 }
 
 #[get("/")]
 async fn index(data: web::Data<AppState>) -> impl Responder {
-    Json(data.tracklist.clone())
+    Json("todo")
 }
 
 #[get("/hello/{name}")]
@@ -55,11 +57,14 @@ pub(crate) async fn main() -> std::io::Result<()> {
 
     println!("Starting Webserver on {host}:{port}");
     HttpServer::new(move || {
-        let cors = Cors::permissive().allow_any_header().allow_any_method().allow_any_origin();
+        let cors = Cors::permissive()
+            .allow_any_header()
+            .allow_any_method()
+            .allow_any_origin();
         App::new()
             .app_data(web::Data::new(AppState {
-                app_name: String::from("Actix Web"),
-                tracklist: tracks.clone(),
+                app_name: "Magpie".to_string(),
+                conn: (db::establish_connection()),
             }))
             .service(hello)
             .service(musictest)

@@ -1,42 +1,35 @@
+use diesel::prelude::*;
 use lofty::{Accessor, ItemKey, Tag};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
-#[derive(Debug, Clone, Serialize)]
+use crate::db::schema::*;
+
+#[derive(Debug, PartialEq, Eq, Queryable, QueryableByName, Serialize, Deserialize)]
+#[diesel(table_name = tracks)]
 pub struct Track {
-    artists: Vec<String>,
-    album: String,
-    albumartists: Vec<String>,
-    title: String,
-    track_number: Option<u32>,
-    disc_number: Option<u32>,
-    pub(crate) path: PathBuf,
+    id: i32,
+    album: Album,
+    path: String,
+    track_number: Option<i32>,
+    disc_number: Option<i32>,
+    title: Option<String>,
+    year: Option<i32>,
 }
 
+#[derive(Debug, PartialEq, Eq, Queryable, QueryableByName, Serialize, Deserialize)]
+#[diesel(table_name = albums)]
 pub struct Album {
-    title: String,
-    year: u32,
-    path: PathBuf,
+    id: i32,
+    year: Option<i32>,
+    title: Option<String>,
 }
 
-impl Track {
-    pub fn new(tag: &Tag, path: PathBuf) -> Self {
-        let artists = tag.get_strings(&ItemKey::TrackArtist);
-        let albumartists = tag.get_strings(&ItemKey::AlbumArtist);
-        let album = tag.album().unwrap();
-        let title = tag.title().unwrap();
-        let disc_number = tag.disk();
-        let track_number = tag.track();
-        Track {
-            artists: vectorize_tags(artists),
-            albumartists: vectorize_tags(albumartists),
-            album: album.to_string(),
-            title: title.to_string(),
-            track_number,
-            disc_number,
-            path,
-        }
-    }
+#[derive(Debug, PartialEq, Eq, Queryable, QueryableByName, Serialize, Deserialize)]
+#[diesel(table_name = artists)]
+pub struct Artist {
+    id: i32,
+    name: String,
 }
 
 fn vectorize_tags<'a>(tags: impl Iterator<Item = &'a str> + Sized) -> Vec<String> {

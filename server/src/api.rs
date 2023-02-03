@@ -1,15 +1,8 @@
-use actix_cors::Cors;
-use std::path::Path;
-
 use actix_files::NamedFile;
-use actix_web::{get, web, App, HttpServer, Responder};
+use actix_web::{get, web, Responder};
 
-use crate::db;
-use crate::metadata::Track;
-use crate::scanner::traverse_dir;
 use actix_web::web::Json;
 use diesel::SqliteConnection;
-use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
 
 pub(crate) struct AppState {
     pub(crate) app_name: String,

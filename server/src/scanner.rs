@@ -1,6 +1,5 @@
-use crate::metadata::Track;
-use lofty::{read_from_path, LoftyError, TaggedFileExt, Tag, TaggedFile};
-use std::path::{Path, PathBuf};
+use lofty::{read_from_path, LoftyError, TaggedFile};
+use std::path::{Path};
 use std::{fs, io};
 
 pub fn traverse_dir(dir: &Path) -> io::Result<Vec<TaggedFile>> {

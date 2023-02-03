@@ -1,7 +1,5 @@
 use diesel::prelude::*;
-use lofty::{Accessor, ItemKey, Tag};
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
 
 use crate::db::schema::*;
 

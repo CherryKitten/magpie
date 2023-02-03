@@ -12,7 +12,7 @@ mod db;
 mod config;
 
 #[actix_web::main]
-async fn main() -> std::io::Result<()> {
+async fn main() -> io::Result<()> {
     let config = config::get_config();
 
     let test_path = Path::new("../test_data/music");
@@ -38,13 +38,13 @@ async fn main() -> std::io::Result<()> {
             .allow_any_method()
             .allow_any_origin();
         App::new()
-            .app_data(web::Data::new(crate::api::AppState {
+            .app_data(web::Data::new(api::AppState {
                 app_name: "Magpie".to_string(),
                 conn: (db::establish_connection()),
             }))
-            .service(crate::api::hello)
-            .service(crate::api::musictest)
-            .service(crate::api::index)
+            .service(api::hello)
+            .service(api::musictest)
+            .service(api::index)
             .wrap(cors)
     })
         .bind_openssl((config.host, config.port), builder)?

@@ -24,7 +24,7 @@ CREATE TABLE artists
     name TEXT                NOT NULL
 );
 
-CREATE TABLE trackArtists
+CREATE TABLE track_artists
 (
     id     INTEGER PRIMARY KEY NOT NULL,
     track  INTEGER             NOT NULL,
@@ -33,7 +33,7 @@ CREATE TABLE trackArtists
     FOREIGN KEY (artist) REFERENCES artists (id)
 );
 
-CREATE TABLE albumArtists
+CREATE TABLE album_artists
 (
     id     INTEGER PRIMARY KEY NOT NULL,
     album  INTEGER             NOT NULL,

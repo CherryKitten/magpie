@@ -1,7 +1,7 @@
 // @generated automatically by Diesel CLI.
 
 diesel::table! {
-    albumArtists (id) {
+    album_artists (id) {
         id -> Integer,
         album -> Integer,
         artist -> Integer,
@@ -24,7 +24,7 @@ diesel::table! {
 }
 
 diesel::table! {
-    trackArtists (id) {
+    track_artists (id) {
         id -> Integer,
         track -> Integer,
         artist -> Integer,
@@ -43,16 +43,16 @@ diesel::table! {
     }
 }
 
-diesel::joinable!(albumArtists -> albums (album));
-diesel::joinable!(albumArtists -> artists (artist));
-diesel::joinable!(trackArtists -> artists (artist));
-diesel::joinable!(trackArtists -> tracks (track));
+diesel::joinable!(album_artists -> albums (album));
+diesel::joinable!(album_artists -> artists (artist));
+diesel::joinable!(track_artists -> artists (artist));
+diesel::joinable!(track_artists -> tracks (track));
 diesel::joinable!(tracks -> albums (album));
 
 diesel::allow_tables_to_appear_in_same_query!(
-    albumArtists,
+    album_artists,
     albums,
     artists,
-    trackArtists,
+    track_artists,
     tracks,
 );

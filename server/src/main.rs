@@ -1,9 +1,6 @@
 use crate::scanner::{insert_found_tracks, traverse_dir};
-use actix_cors::Cors;
-use actix_web::{web, App, HttpServer};
-use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
+
 use std::io;
-use std::path::Path;
 
 mod api;
 mod config;

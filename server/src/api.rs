@@ -1,15 +1,15 @@
-use std::fmt::Error;
-use std::io;
 use actix_cors::Cors;
 use actix_files::NamedFile;
-use actix_web::{get, web, Responder, HttpServer, App};
+use actix_web::{get, web, App, HttpServer, Responder};
 
+use std::io;
+
+use crate::config::AppConfig;
+use crate::db;
 use actix_web::web::Json;
 use diesel::SqliteConnection;
-use lofty::TaggedFile;
+
 use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
-use crate::{api, db};
-use crate::config::AppConfig;
 
 pub(crate) struct AppState {
     pub(crate) app_name: String,
@@ -35,7 +35,6 @@ async fn musictest() -> impl Responder {
 }
 
 pub(crate) async fn start_server(config: &AppConfig) -> Result<(), io::Error> {
-
     let mut builder = SslAcceptor::mozilla_intermediate(SslMethod::tls()).unwrap();
     builder
         .set_private_key_file("../test_data/key.pem", SslFiletype::PEM)
@@ -59,9 +58,10 @@ pub(crate) async fn start_server(config: &AppConfig) -> Result<(), io::Error> {
             .service(index)
             .wrap(cors)
     })
-        .bind_openssl((config.host.as_str(), config.port), builder)?
-        .run()
-        .await.expect("TODO: panic message");
+    .bind_openssl((config.host.as_str(), config.port), builder)?
+    .run()
+    .await
+    .expect("TODO: panic message");
 
     Ok(())
 }

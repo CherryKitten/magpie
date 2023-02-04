@@ -1,14 +1,14 @@
 use crate::db::schema::{albums, artists, tracks};
-use crate::metadata::Album;
+
 use crate::{db, metadata};
 use diesel::prelude::*;
 use diesel::ExpressionMethods;
 use diesel::RunQueryDsl;
 use lofty::{
     error::{ErrorKind, LoftyError},
-    read_from_path, Accessor, ItemKey, Tag, TaggedFile, TaggedFileExt,
+    read_from_path, Accessor, ItemKey, Tag, TaggedFileExt,
 };
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::{fs, io};
 
 pub fn traverse_dir(dir: &Path) -> io::Result<Vec<FoundTrack>> {
@@ -62,7 +62,8 @@ pub fn insert_found_tracks(tracks: Vec<FoundTrack>) {
                 for artist in artists {
                     diesel::insert_or_ignore_into(artists::table)
                         .values(artists::name.eq(artist))
-                        .execute(conn).expect("TODO: panic message");
+                        .execute(conn)
+                        .expect("TODO: panic message");
                 }
             }
             None => {}
@@ -73,7 +74,8 @@ pub fn insert_found_tracks(tracks: Vec<FoundTrack>) {
                 for artist in artists {
                     diesel::insert_or_ignore_into(artists::table)
                         .values(artists::name.eq(artist))
-                        .execute(conn).expect("TODO: panic message");
+                        .execute(conn)
+                        .expect("TODO: panic message");
                 }
             }
             None => {}
@@ -83,7 +85,8 @@ pub fn insert_found_tracks(tracks: Vec<FoundTrack>) {
             Some(ref album) => {
                 diesel::insert_or_ignore_into(albums::table)
                     .values(albums::title.eq(album))
-                    .execute(conn).expect("TODO: panic message");
+                    .execute(conn)
+                    .expect("TODO: panic message");
             }
             None => {}
         };
@@ -130,7 +133,7 @@ impl FoundTrack {
                 tag.get_strings(&ItemKey::AlbumArtist),
             )),
             album: match tag.album() {
-                Some(mut album) => Some(album.to_string()),
+                Some(album) => Some(album.to_string()),
                 None => None,
             },
             path: path.to_str().unwrap().to_string(),
@@ -148,12 +151,12 @@ impl FoundTrack {
             },
             title: {
                 match tag.title() {
-                    Some(mut title) => Some(title.to_string()),
+                    Some(title) => Some(title.to_string()),
                     None => None,
                 }
             },
             year: match tag.year() {
-                Some(mut year) => Some(year as i32),
+                Some(year) => Some(year as i32),
                 None => None,
             },
         }

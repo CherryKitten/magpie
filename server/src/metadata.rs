@@ -30,7 +30,7 @@ pub struct Artist {
     name: String,
 }
 
-fn vectorize_tags<'a>(tags: impl Iterator<Item = &'a str> + Sized) -> Vec<String> {
+pub(crate) fn vectorize_tags<'a>(tags: impl Iterator<Item = &'a str> + Sized) -> Vec<String> {
     let mut temp_vec = vec![];
     for tag in tags {
         temp_vec.push(tag.to_string());

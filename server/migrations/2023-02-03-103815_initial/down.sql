@@ -1,5 +1,5 @@
 DROP TABLE tracks;
 DROP TABLE artists;
 DROP TABLE albums;
-DROP TABLE trackArtists;
-DROP TABLE albumArtists;
+DROP TABLE track_artists;
+DROP TABLE album_artists;

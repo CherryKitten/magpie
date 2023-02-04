@@ -15,13 +15,15 @@ CREATE TABLE albums
 (
     id    INTEGER PRIMARY KEY NOT NULL,
     year  INTEGER,
-    title TEXT
+    title TEXT,
+    UNIQUE (title)
 );
 
 CREATE TABLE artists
 (
     id   INTEGER PRIMARY KEY NOT NULL,
-    name TEXT                NOT NULL
+    name TEXT                NOT NULL,
+    UNIQUE (name)
 );
 
 CREATE TABLE track_artists

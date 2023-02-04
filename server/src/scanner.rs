@@ -1,5 +1,9 @@
-use crate::metadata;
-use diesel::query_builder::QueryFragment;
+use crate::db::schema::{albums, artists, tracks};
+use crate::metadata::Album;
+use crate::{db, metadata};
+use diesel::prelude::*;
+use diesel::ExpressionMethods;
+use diesel::RunQueryDsl;
 use lofty::{
     error::{ErrorKind, LoftyError},
     read_from_path, Accessor, ItemKey, Tag, TaggedFile, TaggedFileExt,
@@ -30,12 +34,10 @@ pub fn traverse_dir(dir: &Path) -> io::Result<Vec<FoundTrack>> {
 fn read_file(path: &Path) -> Result<FoundTrack, LoftyError> {
     let file = read_from_path(path);
     return match file {
-        Ok(file) => {
-            match file.first_tag() {
-                Some(tag) => Ok(FoundTrack::new(tag.clone(), path)),
-                None => return Err(LoftyError::new(ErrorKind::UnsupportedTag)),
-            }
-        }
+        Ok(file) => match file.first_tag() {
+            Some(tag) => Ok(FoundTrack::new(tag.clone(), path)),
+            None => return Err(LoftyError::new(ErrorKind::UnsupportedTag)),
+        },
         Err(e) => Err(e),
     };
 }
@@ -51,10 +53,59 @@ pub fn insert_found_tracks(tracks: Vec<FoundTrack>) {
     //let mut albums: Vec<String> = tracks.iter().map(|t| t.album.clone().unwrap()).collect();
 
     //println!("{:?}, {:?}", artists, albums)
-}
 
-fn get_found_artists(tracks: Vec<FoundTrack>) {
+    let conn = &mut db::establish_connection();
 
+    for track in tracks {
+        match track.artist {
+            Some(artists) => {
+                for artist in artists {
+                    diesel::insert_or_ignore_into(artists::table)
+                        .values(artists::name.eq(artist))
+                        .execute(conn).expect("TODO: panic message");
+                }
+            }
+            None => {}
+        };
+
+        match track.albumartist {
+            Some(artists) => {
+                for artist in artists {
+                    diesel::insert_or_ignore_into(artists::table)
+                        .values(artists::name.eq(artist))
+                        .execute(conn).expect("TODO: panic message");
+                }
+            }
+            None => {}
+        };
+
+        match track.album {
+            Some(ref album) => {
+                diesel::insert_or_ignore_into(albums::table)
+                    .values(albums::title.eq(album))
+                    .execute(conn).expect("TODO: panic message");
+            }
+            None => {}
+        };
+
+        let found_album = albums::table
+            .select(albums::id)
+            .filter(albums::title.eq(&track.album))
+            .first::<i32>(conn)
+            .unwrap();
+
+        diesel::insert_into(tracks::table)
+            .values((
+                tracks::title.eq(track.title),
+                tracks::track_number.eq(track.track_number),
+                tracks::disc_number.eq(track.disc_number),
+                tracks::path.eq(track.path),
+                tracks::year.eq(track.year),
+                tracks::album.eq(found_album),
+            ))
+            .execute(conn)
+            .expect("TODO: panic message");
+    }
 }
 
 #[derive(Debug, Clone)]

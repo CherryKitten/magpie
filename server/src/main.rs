@@ -1,6 +1,9 @@
-use crate::scanner::{insert_found_tracks, traverse_dir};
+use crate::scanner::do_scan;
+use actix_web::rt::time;
+use std::time::Duration;
+use std::{io};
+use actix_web::rt::spawn;
 
-use std::io;
 
 mod api;
 mod config;
@@ -12,10 +15,16 @@ mod scanner;
 async fn main() -> io::Result<()> {
     let config = config::get_config();
 
-    let tracks = traverse_dir(&config.test_path).unwrap();
-    insert_found_tracks(tracks);
-
     println!("Starting Webserver on {}:{}", config.host, config.port);
+
+    spawn(async move {
+        let mut interval = time::interval(Duration::from_secs(60 * 60));
+        println!("Started timer");
+        loop {
+            interval.tick().await;
+            do_scan();
+        }
+    });
 
     api::start_server(&config).await.expect("");
 

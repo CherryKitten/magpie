@@ -1,6 +1,6 @@
 use crate::db::schema::{albums, artists, tracks};
 
-use crate::{db, metadata};
+use crate::{config, db, metadata};
 use diesel::prelude::*;
 use diesel::ExpressionMethods;
 use diesel::RunQueryDsl;
@@ -11,12 +11,18 @@ use lofty::{
 use std::path::Path;
 use std::{fs, io};
 
+pub fn do_scan() {
+    println!{"Doing metadata scan"};
+    let config = config::get_config();
+    let tracks = traverse_dir(&config.test_path).unwrap();
+    insert_found_tracks(tracks);
+}
+
 pub fn traverse_dir(dir: &Path) -> io::Result<Vec<FoundTrack>> {
     let mut tracks = vec![];
     if dir.is_dir() {
         for entry in fs::read_dir(dir)? {
-            let entry = entry?;
-            let path = entry.path();
+            let path = entry?.path();
 
             if path.is_dir() {
                 tracks.append(&mut traverse_dir(&path).unwrap());
@@ -32,54 +38,33 @@ pub fn traverse_dir(dir: &Path) -> io::Result<Vec<FoundTrack>> {
 }
 
 fn read_file(path: &Path) -> Result<FoundTrack, LoftyError> {
-    let file = read_from_path(path);
-    return match file {
+    match read_from_path(path) {
         Ok(file) => match file.first_tag() {
             Some(tag) => Ok(FoundTrack::new(tag.clone(), path)),
             None => return Err(LoftyError::new(ErrorKind::UnsupportedTag)),
         },
         Err(e) => Err(e),
+    }
+}
+fn insert_found_artists(artists: Option<Vec<String>>, conn: &mut SqliteConnection) {
+    match artists {
+        Some(artists) => {
+            for artist in artists {
+                diesel::insert_or_ignore_into(artists::table)
+                    .values(artists::name.eq(artist))
+                    .execute(conn)
+                    .expect("TODO: panic message");
+            }
+        }
+        None => {}
     };
 }
-
 pub fn insert_found_tracks(tracks: Vec<FoundTrack>) {
-    //let mut artists: Vec<Vec<String>> = tracks.iter().map(|t| t.artist.clone().unwrap()).collect();
-    //let mut albumartists: Vec<Vec<String>> = tracks.iter().map(|t| t.albumartist.clone().unwrap()).collect();
-    //artists.append(&mut albumartists);
-    //let mut artists: Vec<&String>= artists.iter().flatten().collect();
-    //artists.sort();
-    //artists.dedup();
-
-    //let mut albums: Vec<String> = tracks.iter().map(|t| t.album.clone().unwrap()).collect();
-
-    //println!("{:?}, {:?}", artists, albums)
-
     let conn = &mut db::establish_connection();
 
     for track in tracks {
-        match track.artist {
-            Some(artists) => {
-                for artist in artists {
-                    diesel::insert_or_ignore_into(artists::table)
-                        .values(artists::name.eq(artist))
-                        .execute(conn)
-                        .expect("TODO: panic message");
-                }
-            }
-            None => {}
-        };
-
-        match track.albumartist {
-            Some(artists) => {
-                for artist in artists {
-                    diesel::insert_or_ignore_into(artists::table)
-                        .values(artists::name.eq(artist))
-                        .execute(conn)
-                        .expect("TODO: panic message");
-                }
-            }
-            None => {}
-        };
+        insert_found_artists(track.artist, conn);
+        insert_found_artists(track.albumartist, conn);
 
         match track.album {
             Some(ref album) => {

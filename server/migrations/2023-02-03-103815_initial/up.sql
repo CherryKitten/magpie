@@ -1,8 +1,8 @@
 CREATE TABLE tracks
 (
     id           INTEGER PRIMARY KEY NOT NULL,
-    album        INTEGER             NOT NULL,
-    path         TEXT                NOT NULL,
+    album        INTEGER,
+    path         TEXT,
     track_number INTEGER,
     disc_number  INTEGER,
     title        TEXT,
@@ -22,15 +22,15 @@ CREATE TABLE albums
 CREATE TABLE artists
 (
     id   INTEGER PRIMARY KEY NOT NULL,
-    name TEXT                NOT NULL,
+    name TEXT,
     UNIQUE (name)
 );
 
 CREATE TABLE track_artists
 (
     id     INTEGER PRIMARY KEY NOT NULL,
-    track  INTEGER             NOT NULL,
-    artist INTEGER             NOT NULL,
+    track  INTEGER,
+    artist INTEGER,
     FOREIGN KEY (track) REFERENCES tracks (id),
     FOREIGN KEY (artist) REFERENCES artists (id)
 );

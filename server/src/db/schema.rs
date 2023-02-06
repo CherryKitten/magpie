@@ -19,23 +19,23 @@ diesel::table! {
 diesel::table! {
     artists (id) {
         id -> Integer,
-        name -> Text,
+        name -> Nullable<Text>,
     }
 }
 
 diesel::table! {
     track_artists (id) {
         id -> Integer,
-        track -> Integer,
-        artist -> Integer,
+        track -> Nullable<Integer>,
+        artist -> Nullable<Integer>,
     }
 }
 
 diesel::table! {
     tracks (id) {
         id -> Integer,
-        album -> Integer,
-        path -> Text,
+        album -> Nullable<Integer>,
+        path -> Nullable<Text>,
         track_number -> Nullable<Integer>,
         disc_number -> Nullable<Integer>,
         title -> Nullable<Text>,

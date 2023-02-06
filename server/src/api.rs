@@ -2,23 +2,70 @@ use actix_cors::Cors;
 use actix_files::NamedFile;
 use actix_web::{get, web, App, HttpServer, Responder};
 
-use std::io;
-
 use crate::config::AppConfig;
-use crate::db;
 use actix_web::web::Json;
-use diesel::SqliteConnection;
+use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl, SqliteConnection};
+use serde::{Deserialize, Serialize};
+use std::io;
+use std::sync::{Mutex, MutexGuard};
 
+use crate::db::establish_connection;
+use crate::db::schema::{albums, tracks};
+use crate::metadata::{get_album_by_id, get_all_tracks, get_track_by_id, Track};
 use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
 
 pub(crate) struct AppState {
     pub(crate) app_name: String,
-    pub(crate) conn: SqliteConnection,
+    pub(crate) conn: Mutex<SqliteConnection>,
 }
 
 #[get("/")]
 async fn index() -> impl Responder {
     Json("todo")
+}
+
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+struct TrackResponse {
+    id: i32,
+    albumid: Option<i32>,
+    album: Option<String>,
+    track_number: Option<i32>,
+    disc_number: Option<i32>,
+    title: Option<String>,
+    year: Option<i32>,
+}
+
+impl TrackResponse {
+    fn from_track(track: Track) -> Self {
+        TrackResponse {
+            id: track.id,
+            albumid: track.album,
+            album: match get_album_by_id(track.album.unwrap_or(0)) {
+                Some(a) => a.title,
+                None => None,
+            },
+            track_number: track.track_number,
+            disc_number: track.disc_number,
+            title: track.title,
+            year: track.year,
+        }
+    }
+}
+
+#[get("/tracks")]
+async fn get_tracks(data: web::Data<AppState>) -> impl Responder {
+    let mut response = vec![];
+
+    for track in get_all_tracks() {
+        response.push(TrackResponse::from_track(track));
+    }
+    Json(response)
+}
+
+#[get("/tracks/{id}")]
+async fn play_track(id: web::Path<i32>) -> impl Responder {
+    let track = get_track_by_id(id.into_inner()).unwrap();
+    NamedFile::open_async(track.path.unwrap()).await
 }
 
 #[get("/hello/{name}")]
@@ -51,11 +98,13 @@ pub(crate) async fn start_server(config: &AppConfig) -> Result<(), io::Error> {
         App::new()
             .app_data(web::Data::new(AppState {
                 app_name: "Magpie".to_string(),
-                conn: (db::establish_connection()),
+                conn: (establish_connection().into()),
             }))
             .service(hello)
             .service(musictest)
             .service(index)
+            .service(get_tracks)
+            .service(play_track)
             .wrap(cors)
     })
     .bind_openssl((config.host.as_str(), config.port), builder)?

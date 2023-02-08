@@ -6,7 +6,7 @@ pub struct AppConfig {
     pub test_path: PathBuf,
 }
 
-pub(crate) fn get_config() -> AppConfig {
+pub fn get_config() -> AppConfig {
     AppConfig {
         host: "localhost".to_string(),
         port: 8080,

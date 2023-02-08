@@ -1,9 +1,12 @@
 pub mod schema;
+pub mod models;
 
 use diesel::prelude::*;
 use diesel::SqliteConnection;
 use dotenvy::dotenv;
 use std::env;
+use models::*;
+use schema::*;
 
 pub fn establish_connection() -> SqliteConnection {
     dotenv().ok();
@@ -12,3 +15,5 @@ pub fn establish_connection() -> SqliteConnection {
     SqliteConnection::establish(&database_url)
         .unwrap_or_else(|_| panic!("Error connecting to {}", database_url))
 }
+
+

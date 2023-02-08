@@ -1,4 +1,4 @@
-use crate::db::schema::{albums, artists, tracks};
+use crate::db::schema::*;
 
 use crate::{config, db, metadata};
 use diesel::prelude::*;
@@ -46,7 +46,7 @@ fn read_file(path: &Path) -> Result<FoundTrack, LoftyError> {
         Err(e) => Err(e),
     }
 }
-fn insert_found_artists(artists: Option<Vec<String>>, conn: &mut SqliteConnection) {
+fn insert_found_artists(artists: &Option<Vec<String>>, conn: &mut SqliteConnection) {
     match artists {
         Some(artists) => {
             for artist in artists {
@@ -63,8 +63,8 @@ pub fn insert_found_tracks(tracks: Vec<FoundTrack>) {
     let conn = &mut db::establish_connection();
 
     for track in tracks {
-        insert_found_artists(track.artist, conn);
-        insert_found_artists(track.albumartist, conn);
+        insert_found_artists(&track.artist, conn);
+        insert_found_artists(&track.albumartist, conn);
 
         match track.album {
             Some(ref album) => {
@@ -82,6 +82,8 @@ pub fn insert_found_tracks(tracks: Vec<FoundTrack>) {
             .first::<i32>(conn)
             .unwrap();
 
+
+
         diesel::insert_into(tracks::table)
             .values((
                 tracks::title.eq(track.title),
@@ -89,7 +91,7 @@ pub fn insert_found_tracks(tracks: Vec<FoundTrack>) {
                 tracks::disc_number.eq(track.disc_number),
                 tracks::path.eq(track.path),
                 tracks::year.eq(track.year),
-                tracks::album.eq(found_album),
+                tracks::album_id.eq(found_album),
             ))
             .execute(conn)
             .expect("TODO: panic message");

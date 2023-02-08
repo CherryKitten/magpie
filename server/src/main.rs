@@ -26,8 +26,6 @@ async fn main() -> io::Result<()> {
 
     api::start_server(&config).await.expect("");
 
-    println!("{}", config.host);
-
     println!("Shutting down..");
     Ok(())
 }

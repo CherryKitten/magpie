@@ -1,4 +1,5 @@
 use crate::db::establish_connection;
+use crate::db::models::{Album, Artist, Track};
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -6,7 +7,7 @@ use crate::db::schema::*;
 
 pub mod scanner;
 
-pub(crate) fn vectorize_tags<'a>(tags: impl Iterator<Item = &'a str> + Sized) -> Vec<String> {
+pub fn vectorize_tags<'a>(tags: impl Iterator<Item = &'a str> + Sized) -> Vec<String> {
     let mut temp_vec = vec![];
     for tag in tags {
         temp_vec.push(tag.to_string());
@@ -17,19 +18,18 @@ pub(crate) fn vectorize_tags<'a>(tags: impl Iterator<Item = &'a str> + Sized) ->
 pub fn get_all_tracks() -> Vec<Track> {
     let mut conn = establish_connection();
 
-    tracks::table
-        .select(tracks::all_columns)
-        .load::<Track>(&mut conn)
-        .expect("")
+    Track::all().load::<Track>(&mut conn).expect("")
 }
 
 pub fn get_all_albums() -> Vec<Album> {
     let mut conn = establish_connection();
 
-    albums::table
-        .select(albums::all_columns)
-        .load::<Album>(&mut conn)
-        .expect("")
+    Album::all().load::<Album>(&mut conn).expect("")
+}
+
+pub fn get_all_artists() -> Vec<Artist> {
+    let mut conn = establish_connection();
+    Artist::all().load::<Artist>(&mut conn).expect("")
 }
 
 pub fn get_album_by_id(id: i32) -> Option<Album> {
@@ -57,31 +57,4 @@ pub fn get_track_by_id(id: i32) -> Option<Track> {
         Ok(track) => Some(track),
         Err(..) => None,
     }
-}
-
-#[derive(Debug, PartialEq, Eq, Queryable, QueryableByName, Serialize, Deserialize)]
-#[diesel(table_name = tracks)]
-pub struct Track {
-    pub(crate) id: i32,
-    pub(crate) album: Option<i32>,
-    pub(crate) path: Option<String>,
-    pub(crate) track_number: Option<i32>,
-    pub(crate) disc_number: Option<i32>,
-    pub(crate) title: Option<String>,
-    pub(crate) year: Option<i32>,
-}
-
-#[derive(Debug, PartialEq, Eq, Queryable, QueryableByName, Serialize, Deserialize)]
-#[diesel(table_name = albums)]
-pub struct Album {
-    id: i32,
-    year: Option<i32>,
-    pub(crate) title: Option<String>,
-}
-
-#[derive(Debug, PartialEq, Eq, Queryable, QueryableByName, Serialize, Deserialize)]
-#[diesel(table_name = artists)]
-pub struct Artist {
-    id: i32,
-    name: Option<String>,
 }

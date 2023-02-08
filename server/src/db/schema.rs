@@ -3,8 +3,8 @@
 diesel::table! {
     album_artists (id) {
         id -> Integer,
-        album -> Integer,
-        artist -> Integer,
+        album_id -> Integer,
+        artist_id -> Integer,
     }
 }
 
@@ -26,15 +26,15 @@ diesel::table! {
 diesel::table! {
     track_artists (id) {
         id -> Integer,
-        track -> Nullable<Integer>,
-        artist -> Nullable<Integer>,
+        track_id -> Nullable<Integer>,
+        artist_id -> Nullable<Integer>,
     }
 }
 
 diesel::table! {
     tracks (id) {
         id -> Integer,
-        album -> Nullable<Integer>,
+        album_id -> Nullable<Integer>,
         path -> Nullable<Text>,
         track_number -> Nullable<Integer>,
         disc_number -> Nullable<Integer>,
@@ -43,11 +43,11 @@ diesel::table! {
     }
 }
 
-diesel::joinable!(album_artists -> albums (album));
-diesel::joinable!(album_artists -> artists (artist));
-diesel::joinable!(track_artists -> artists (artist));
-diesel::joinable!(track_artists -> tracks (track));
-diesel::joinable!(tracks -> albums (album));
+diesel::joinable!(album_artists -> albums (album_id));
+diesel::joinable!(album_artists -> artists (artist_id));
+diesel::joinable!(track_artists -> artists (artist_id));
+diesel::joinable!(track_artists -> tracks (track_id));
+diesel::joinable!(tracks -> albums (album_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     album_artists,

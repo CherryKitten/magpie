@@ -1,6 +1,6 @@
 use actix_cors::Cors;
 use actix_files::NamedFile;
-use actix_web::{get, web, App, HttpServer, Responder};
+use actix_web::{App, get, HttpServer, Responder, web};
 
 use crate::config::AppConfig;
 use actix_web::web::Json;
@@ -11,12 +11,13 @@ use std::sync::Mutex;
 
 use crate::db::establish_connection;
 
-use crate::metadata::{get_album_by_id, get_all_tracks, get_track_by_id, Track};
+use crate::metadata::{get_album_by_id, get_all_tracks, get_track_by_id};
 use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
+use crate::db::models::Track;
 
-pub(crate) struct AppState {
-    pub(crate) app_name: String,
-    pub(crate) conn: Mutex<SqliteConnection>,
+pub struct AppState {
+    pub app_name: String,
+    pub conn: Mutex<SqliteConnection>,
 }
 
 #[get("/")]
@@ -39,8 +40,8 @@ impl TrackResponse {
     fn from_track(track: Track) -> Self {
         TrackResponse {
             id: track.id,
-            albumid: track.album,
-            album: match get_album_by_id(track.album.unwrap_or(0)) {
+            albumid: track.album_id,
+            album: match get_album_by_id(track.album_id.unwrap_or(0)) {
                 Some(a) => a.title,
                 None => None,
             },
@@ -81,7 +82,7 @@ async fn musictest() -> impl Responder {
     //NamedFile::open_async(path.to_string()).await
 }
 
-pub(crate) async fn start_server(config: &AppConfig) -> Result<(), io::Error> {
+pub async fn start_server(config: &AppConfig) -> Result<(), io::Error> {
     let mut builder = SslAcceptor::mozilla_intermediate(SslMethod::tls()).unwrap();
     builder
         .set_private_key_file("../test_data/key.pem", SslFiletype::PEM)

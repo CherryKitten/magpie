@@ -1,13 +1,13 @@
 CREATE TABLE tracks
 (
     id           INTEGER PRIMARY KEY NOT NULL,
-    album        INTEGER,
+    album_id     INTEGER,
     path         TEXT,
     track_number INTEGER,
     disc_number  INTEGER,
     title        TEXT,
     year         INTEGER,
-    FOREIGN KEY (album) REFERENCES albums (id) ON DELETE RESTRICT,
+    FOREIGN KEY (album_id) REFERENCES albums (id) ON DELETE RESTRICT,
     UNIQUE (path) ON CONFLICT REPLACE
 );
 
@@ -28,18 +28,20 @@ CREATE TABLE artists
 
 CREATE TABLE track_artists
 (
-    id     INTEGER PRIMARY KEY NOT NULL,
-    track  INTEGER,
-    artist INTEGER,
-    FOREIGN KEY (track) REFERENCES tracks (id),
-    FOREIGN KEY (artist) REFERENCES artists (id)
+    id        INTEGER PRIMARY KEY NOT NULL,
+    track_id  INTEGER,
+    artist_id INTEGER,
+    FOREIGN KEY (track_id) REFERENCES tracks (id),
+    FOREIGN KEY (artist_id) REFERENCES artists (id),
+    UNIQUE (track_id, artist_id)
 );
 
 CREATE TABLE album_artists
 (
-    id     INTEGER PRIMARY KEY NOT NULL,
-    album  INTEGER             NOT NULL,
-    artist INTEGER             NOT NULL,
-    FOREIGN KEY (album) REFERENCES albums (id),
-    FOREIGN KEY (artist) REFERENCES artists (id)
+    id        INTEGER PRIMARY KEY NOT NULL,
+    album_id  INTEGER             NOT NULL,
+    artist_id INTEGER             NOT NULL,
+    FOREIGN KEY (album_id) REFERENCES albums (id),
+    FOREIGN KEY (artist_id) REFERENCES artists (id),
+    UNIQUE (album_id, artist_id)
 )

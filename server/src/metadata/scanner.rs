@@ -12,7 +12,7 @@ use std::path::Path;
 use std::{fs, io};
 
 pub fn do_scan() {
-    println!{"Doing metadata scan"};
+    println! {"Doing metadata scan"};
     let config = config::get_config();
     let tracks = traverse_dir(&config.test_path).unwrap();
     insert_found_tracks(tracks);

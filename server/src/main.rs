@@ -1,15 +1,13 @@
-use crate::scanner::do_scan;
-use actix_web::rt::time;
-use std::time::Duration;
-use std::{io};
+use crate::metadata::scanner::do_scan;
 use actix_web::rt::spawn;
-
+use actix_web::rt::time;
+use std::io;
+use std::time::Duration;
 
 mod api;
 mod config;
 mod db;
 mod metadata;
-mod scanner;
 
 #[actix_web::main]
 async fn main() -> io::Result<()> {

@@ -4,6 +4,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::db::schema::*;
 
+pub mod scanner;
+
 pub(crate) fn vectorize_tags<'a>(tags: impl Iterator<Item = &'a str> + Sized) -> Vec<String> {
     let mut temp_vec = vec![];
     for tag in tags {

@@ -4,13 +4,13 @@ use actix_web::{get, web, App, HttpServer, Responder};
 
 use crate::config::AppConfig;
 use actix_web::web::Json;
-use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl, SqliteConnection};
+use diesel::SqliteConnection;
 use serde::{Deserialize, Serialize};
 use std::io;
-use std::sync::{Mutex, MutexGuard};
+use std::sync::Mutex;
 
 use crate::db::establish_connection;
-use crate::db::schema::{albums, tracks};
+
 use crate::metadata::{get_album_by_id, get_all_tracks, get_track_by_id, Track};
 use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
 
@@ -53,7 +53,7 @@ impl TrackResponse {
 }
 
 #[get("/tracks")]
-async fn get_tracks(data: web::Data<AppState>) -> impl Responder {
+async fn get_tracks(_data: web::Data<AppState>) -> impl Responder {
     let mut response = vec![];
 
     for track in get_all_tracks() {

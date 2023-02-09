@@ -1,39 +1,47 @@
-use actix_files::NamedFile;
-use actix_web::{get, Responder, web};
-use actix_web::web::Json;
 use crate::db::models::*;
-use diesel::prelude::*;
-use crate::api::AppState;
+use actix_files::NamedFile;
+use actix_web::web::Json;
+use actix_web::{error, get, web, Responder};
 
 #[get("/")]
-pub(crate) async fn index() -> impl Responder {
+pub async fn index() -> impl Responder {
     Json("todo")
 }
 
 #[get("/tracks")]
-pub(crate) async fn get_tracks(data: web::Data<AppState>) -> impl Responder {
-    let mut conn = data.conn.lock().unwrap();
-
-    Json(Track::all().load::<Track>(&mut *conn).expect(""))
+pub async fn get_tracks() -> Result<impl Responder, error::Error> {
+    if let Ok(tracks) = Track::all() {
+        Ok(Json(tracks))
+    } else {
+        Err(error::ErrorInternalServerError("could not find any tracks"))
+    }
 }
 
 #[get("/tracks/{id}")]
-pub(crate) async fn play_track(id: web::Path<i32>, data: web::Data<AppState>) -> impl Responder {
-    let mut conn = data.conn.lock().unwrap();
-
-    NamedFile::open_async(Track::by_id(*id).first(&mut *conn).expect("").path.unwrap()).await
+pub async fn get_track(id: web::Path<i32>) -> Result<impl Responder, error::Error> {
+    if let Ok(track) = Track::by_id(*id) {
+        Ok(NamedFile::open_async(track.path.unwrap()).await)
+    } else {
+        Err(error::ErrorNotFound("Track not found"))
+    }
 }
 
 #[get("/albums")]
-pub(crate) async fn get_albums(data: web::Data<AppState>) -> impl Responder {
-    let mut conn = data.conn.lock().unwrap();
-
-    Json(Album::all().load::<Album>(&mut *conn).expect(""))
+pub async fn get_albums() -> Result<impl Responder, error::Error> {
+    if let Ok(albums) = Album::all() {
+        Ok(Json(albums))
+    } else {
+        Err(error::ErrorInternalServerError("could not find any albums"))
+    }
 }
 
 #[get("/artists")]
-pub(crate) async fn get_artists(data: web::Data<AppState>) -> impl Responder {
-    let mut conn = data.conn.lock().unwrap();
-
-    Json(Artist::all().load::<Artist>(&mut *conn).expect(""))
+pub async fn get_artists() -> Result<impl Responder, error::Error> {
+    if let Ok(artists) = Artist::all() {
+        Ok(Json(artists))
+    } else {
+        Err(error::ErrorInternalServerError(
+            "could not find any artists",
+        ))
+    }
 }

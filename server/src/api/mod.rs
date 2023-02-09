@@ -1,31 +1,24 @@
-mod responses;
 mod routes;
 
 use actix_cors::Cors;
-use actix_files::NamedFile;
-use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
+
+use actix_web::{web, App, HttpServer};
 
 use crate::config::AppConfig;
-use actix_web::web::Json;
+
 use diesel::SqliteConnection;
-use serde::{Deserialize, Serialize};
+
 use std::io;
 use std::sync::Mutex;
 
-use diesel::prelude::*;
-
 use crate::db::establish_connection;
 
-use crate::db::models::*;
-use crate::metadata::{get_album_by_id, get_all_tracks, get_track_by_id};
 use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
 
 pub struct AppState {
     pub app_name: String,
     pub conn: Mutex<SqliteConnection>,
 }
-
-
 
 pub async fn start_server(config: &AppConfig) -> Result<(), io::Error> {
     let mut builder = SslAcceptor::mozilla_intermediate(SslMethod::tls()).unwrap();
@@ -48,7 +41,7 @@ pub async fn start_server(config: &AppConfig) -> Result<(), io::Error> {
             }))
             .service(routes::index)
             .service(routes::get_tracks)
-            .service(routes::play_track)
+            .service(routes::get_track)
             .service(routes::get_albums)
             .service(routes::get_artists)
             .wrap(cors)

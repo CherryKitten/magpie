@@ -1,9 +1,12 @@
 use super::schema::*;
-use diesel::dsl::AsSelect;
-use diesel::dsl::SqlTypeOf;
+use crate::db::establish_connection;
+use anyhow::Result;
+
 use diesel::prelude::*;
-use diesel::sqlite::Sqlite;
-use serde::{Deserialize, Serialize};
+
+use serde::ser::{Serialize, SerializeStruct, Serializer};
+use serde::Deserialize;
+use serde::Serialize as SerializeDerive;
 
 #[derive(
     Debug,
@@ -15,7 +18,6 @@ use serde::{Deserialize, Serialize};
     Identifiable,
     Associations,
     AsChangeset,
-    Serialize,
     Deserialize,
 )]
 #[diesel(belongs_to(Album))]
@@ -30,28 +32,42 @@ pub struct Track {
     pub year: Option<i32>,
 }
 
-type SqlType<T> = SqlTypeOf<AsSelect<T, Sqlite>>;
+impl Serialize for Track {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut state = serializer.serialize_struct("Track", 7)?;
 
-type TrackQuery<'a> = tracks::BoxedQuery<'a, Sqlite, SqlType<Track>>;
-type AlbumQuery<'a> = albums::BoxedQuery<'a, Sqlite, SqlType<Album>>;
-type ArtistQuery<'a> = artists::BoxedQuery<'a, Sqlite, SqlType<Artist>>;
+        let album = self.get_album().unwrap();
+
+        state.serialize_field("id", &self.id)?;
+        state.serialize_field("album_id", &self.album_id)?;
+        state.serialize_field("album", &album.title.unwrap_or("".to_string()))?;
+        state.serialize_field("track_number", &self.track_number)?;
+        state.serialize_field("disc_number", &self.disc_number)?;
+        state.serialize_field("title", &self.title)?;
+        state.serialize_field("year", &self.year)?;
+        state.end()
+    }
+}
 
 impl Track {
-    pub fn all() -> TrackQuery<'static> {
-        tracks::table.select(Track::as_select()).into_boxed()
+    pub fn all() -> Result<Vec<Track>> {
+        let mut conn = establish_connection();
+
+        Ok(tracks::table.load::<Track>(&mut conn)?)
     }
-    pub fn by_id(id: i32) -> TrackQuery<'static> {
-        tracks::table
-            .select(Track::as_select())
-            .find(id)
-            .into_boxed()
+    pub fn by_id(id: i32) -> Result<Track> {
+        let mut conn = establish_connection();
+
+        Ok(tracks::table.find(id).first(&mut conn)?)
     }
-    pub fn to_json(self) {
-        todo!("")
+    pub fn get_album(&self) -> Result<Album> {
+        let album_id = self.album_id.unwrap_or_default();
+
+        Ok(Album::by_id(album_id)?)
     }
-    //pub fn by_title(title: String) -> TrackQuery<'static> {
-    //    tracks::table.select(Track::as_select().filter(tracks::title.eq(title))).into_boxed()
-    //}
 }
 
 #[derive(
@@ -63,7 +79,7 @@ impl Track {
     Identifiable,
     AsChangeset,
     Selectable,
-    Serialize,
+    SerializeDerive,
     Deserialize,
 )]
 #[diesel(table_name = albums)]
@@ -74,14 +90,18 @@ pub struct Album {
 }
 
 impl Album {
-    pub fn all() -> AlbumQuery<'static> {
-        albums::table.select(Album::as_select()).into_boxed()
+    pub fn all() -> Result<Vec<Album>> {
+        let mut conn = establish_connection();
+
+        Ok(albums::table.load::<Album>(&mut conn)?)
     }
-    pub fn by_id(id: i32) -> AlbumQuery<'static> {
-        albums::table
+    pub fn by_id(id: i32) -> Result<Album> {
+        let mut conn = establish_connection();
+
+        Ok(albums::table
             .select(Album::as_select())
             .find(id)
-            .into_boxed()
+            .first::<Album>(&mut conn)?)
     }
 }
 
@@ -94,7 +114,7 @@ impl Album {
     QueryableByName,
     Identifiable,
     AsChangeset,
-    Serialize,
+    SerializeDerive,
     Deserialize,
 )]
 #[diesel(table_name = artists)]
@@ -104,18 +124,21 @@ pub struct Artist {
 }
 
 impl Artist {
-    pub fn all() -> ArtistQuery<'static> {
-        artists::table.select(Artist::as_select()).into_boxed()
+    pub fn all() -> Result<Vec<Artist>> {
+        let mut conn = establish_connection();
+
+        Ok(artists::table.load::<Artist>(&mut conn)?)
     }
-    pub fn by_id(id: i32) -> ArtistQuery<'static> {
-        artists::table
-            .select(Artist::as_select())
-            .find(id)
-            .into_boxed()
+    pub fn by_id(id: i32) -> Result<Artist> {
+        let mut conn = establish_connection();
+
+        Ok(artists::table.find(id).first(&mut conn)?)
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Queryable, Associations, Identifiable, Serialize, Deserialize)]
+#[derive(
+    Debug, PartialEq, Eq, Queryable, Associations, Identifiable, SerializeDerive, Deserialize,
+)]
 #[diesel(table_name = album_artists)]
 #[diesel(belongs_to(Album))]
 #[diesel(belongs_to(Artist))]
@@ -125,7 +148,9 @@ pub struct AlbumArtist {
     artist_id: Option<i32>,
 }
 
-#[derive(Debug, PartialEq, Eq, Queryable, Identifiable, Associations, Serialize, Deserialize)]
+#[derive(
+    Debug, PartialEq, Eq, Queryable, Identifiable, Associations, SerializeDerive, Deserialize,
+)]
 #[diesel(belongs_to(Track))]
 #[diesel(belongs_to(Artist))]
 #[diesel(table_name = track_artists)]

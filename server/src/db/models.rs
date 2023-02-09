@@ -40,6 +40,18 @@ impl Track {
     pub fn all() -> TrackQuery<'static> {
         tracks::table.select(Track::as_select()).into_boxed()
     }
+    pub fn by_id(id: i32) -> TrackQuery<'static> {
+        tracks::table
+            .select(Track::as_select())
+            .find(id)
+            .into_boxed()
+    }
+    pub fn to_json(self) {
+        todo!("")
+    }
+    //pub fn by_title(title: String) -> TrackQuery<'static> {
+    //    tracks::table.select(Track::as_select().filter(tracks::title.eq(title))).into_boxed()
+    //}
 }
 
 #[derive(
@@ -65,6 +77,12 @@ impl Album {
     pub fn all() -> AlbumQuery<'static> {
         albums::table.select(Album::as_select()).into_boxed()
     }
+    pub fn by_id(id: i32) -> AlbumQuery<'static> {
+        albums::table
+            .select(Album::as_select())
+            .find(id)
+            .into_boxed()
+    }
 }
 
 #[derive(
@@ -88,6 +106,12 @@ pub struct Artist {
 impl Artist {
     pub fn all() -> ArtistQuery<'static> {
         artists::table.select(Artist::as_select()).into_boxed()
+    }
+    pub fn by_id(id: i32) -> ArtistQuery<'static> {
+        artists::table
+            .select(Artist::as_select())
+            .find(id)
+            .into_boxed()
     }
 }
 

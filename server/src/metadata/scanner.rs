@@ -82,8 +82,6 @@ pub fn insert_found_tracks(tracks: Vec<FoundTrack>) {
             .first::<i32>(conn)
             .unwrap();
 
-
-
         diesel::insert_into(tracks::table)
             .values((
                 tracks::title.eq(track.title),

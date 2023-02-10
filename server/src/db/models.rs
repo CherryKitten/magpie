@@ -1,12 +1,16 @@
 use super::schema::*;
 use crate::db::establish_connection;
 use anyhow::Result;
+use std::path::Path;
 
 use diesel::prelude::*;
 
 use serde::ser::{Serialize, SerializeStruct, Serializer};
 use serde::Deserialize;
 use serde::Serialize as SerializeDerive;
+
+use crate::metadata::vectorize_tags;
+use lofty::{Accessor, ItemKey, Tag};
 
 #[derive(
     Debug,
@@ -53,6 +57,66 @@ impl Serialize for Track {
 }
 
 impl Track {
+    pub fn insert_or_update(tag: Tag, path: &Path) -> Result<Track> {
+        let mut conn = establish_connection();
+
+        let artists = vectorize_tags(tag.get_strings(&ItemKey::TrackArtist));
+        let albumartists = vectorize_tags(tag.get_strings(&ItemKey::AlbumArtist));
+        Artist::from_vec(&artists)?;
+        Artist::from_vec(&albumartists)?;
+
+        let album = match tag.album() {
+            Some(album) => Some(Album::new(
+                album.to_string(),
+                albumartists,
+                tag.year().unwrap_or_default() as i32,
+            )?),
+            None => None,
+        };
+
+        let insert = (
+            tracks::title.eq(match tag.title() {
+                Some(title) => Some(title.to_string()),
+                None => None,
+            }),
+            tracks::track_number.eq(match tag.track() {
+                Some(track) => Some(track as i32),
+                None => None,
+            }),
+            tracks::disc_number.eq(match tag.disk() {
+                Some(track) => Some(track as i32),
+                None => None,
+            }),
+            tracks::path.eq(path.to_str().unwrap().to_string()),
+            tracks::year.eq(match tag.year() {
+                Some(year) => Some(year as i32),
+                None => None,
+            }),
+            tracks::album_id.eq(match album {
+                Some(album) => Some(album.id),
+                None => None,
+            }),
+        );
+
+        let track: Track = diesel::insert_into(tracks::table)
+            .values(&insert)
+            .on_conflict(tracks::path)
+            .do_update()
+            .set(insert.clone())
+            .get_result(&mut conn)?;
+
+        for artist in artists {
+            diesel::insert_or_ignore_into(track_artists::table)
+                .values((
+                    track_artists::track_id.eq(track.id),
+                    track_artists::artist_id.eq(Artist::by_name(&artist)?.id),
+                ))
+                .execute(&mut conn)?;
+        }
+
+        Ok(track)
+    }
+
     pub fn all() -> Result<Vec<Track>> {
         let mut conn = establish_connection();
 
@@ -62,6 +126,11 @@ impl Track {
         let mut conn = establish_connection();
 
         Ok(tracks::table.find(id).first(&mut conn)?)
+    }
+    pub fn by_path(path: &str) -> Result<Track> {
+        let mut conn = establish_connection();
+
+        Ok((tracks::table.filter(tracks::path.eq(path.to_string()))).first(&mut conn)?)
     }
     pub fn get_album(&self) -> Result<Album> {
         let album_id = self.album_id.unwrap_or_default();
@@ -90,6 +159,29 @@ pub struct Album {
 }
 
 impl Album {
+    pub fn new(title: String, albumartists: Vec<String>, year: i32) -> Result<Album> {
+        let mut conn = establish_connection();
+
+        let insert = (albums::title.eq(title), albums::year.eq(year));
+        let album: Album = diesel::insert_into(albums::table)
+            .values(&insert)
+            .on_conflict((albums::title, albums::year))
+            .do_update()
+            .set(insert.clone())
+            .get_result(&mut conn)?;
+
+        for artist in albumartists {
+            diesel::insert_into(album_artists::table)
+                .values((
+                    album_artists::album_id.eq(album.id),
+                    album_artists::artist_id.eq(Artist::by_name(&artist)?.id),
+                ))
+                .on_conflict_do_nothing()
+                .execute(&mut conn)?;
+        }
+
+        Ok(album)
+    }
     pub fn all() -> Result<Vec<Album>> {
         let mut conn = establish_connection();
 
@@ -133,6 +225,26 @@ impl Artist {
         let mut conn = establish_connection();
 
         Ok(artists::table.find(id).first(&mut conn)?)
+    }
+    pub fn by_name(name: &str) -> Result<Artist> {
+        let mut conn = establish_connection();
+
+        Ok((artists::table.filter(artists::name.eq(name.to_string()))).first(&mut conn)?)
+    }
+
+    pub fn from_vec(artists: &Vec<String>) -> Result<()> {
+        let mut conn = establish_connection();
+
+        let mut temp = vec![];
+        for artist in artists {
+            temp.push(artists::name.eq(artist))
+        }
+
+        diesel::insert_or_ignore_into(artists::table)
+            .values(temp)
+            .execute(&mut conn)?;
+
+        Ok(())
     }
 }
 

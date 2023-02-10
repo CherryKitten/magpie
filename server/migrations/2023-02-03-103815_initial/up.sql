@@ -16,7 +16,7 @@ CREATE TABLE albums
     id    INTEGER PRIMARY KEY NOT NULL,
     year  INTEGER,
     title TEXT,
-    UNIQUE (title)
+    UNIQUE (title, year)
 );
 
 CREATE TABLE artists

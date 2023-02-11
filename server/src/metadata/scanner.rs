@@ -8,7 +8,7 @@ use std::fs;
 use std::path::Path;
 
 pub fn do_scan() {
-    info! {"Doing metadata scan"};
+    info!("Doing metadata scan");
     let config = config::get_config();
     match traverse_dir(&config.test_path) {
         Ok(_) => {}

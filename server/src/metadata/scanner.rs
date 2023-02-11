@@ -3,17 +3,23 @@ use crate::db::models::*;
 use anyhow::{Error, Result};
 
 use lofty::{read_from_path, Tag, TaggedFileExt};
+use log::{error, info, trace};
 use std::fs;
 use std::path::Path;
 
 pub fn do_scan() {
-    println! {"Doing metadata scan"};
+    info! {"Doing metadata scan"};
     let config = config::get_config();
-    traverse_dir(&config.test_path).unwrap();
+    match traverse_dir(&config.test_path) {
+        Ok(_) => {}
+        Err(e) => {
+            error!("{}", e)
+        }
+    }
 }
 
 pub fn traverse_dir(dir: &Path) -> Result<()> {
-    println!("Traversing though {:?}", dir);
+    info!("Traversing through {:?}", dir);
     if dir.is_dir() {
         for entry in fs::read_dir(dir)? {
             let path = entry?.path();
@@ -32,14 +38,21 @@ pub fn traverse_dir(dir: &Path) -> Result<()> {
 }
 
 fn read_file(path: &Path) -> Result<()> {
-    println!("Reading file {:?}", path);
+    trace!("Reading file {:?}", path);
     let tag = match read_from_path(path) {
         Ok(file) => read_tags(file),
-        Err(error) => return Err(Error::from(error)),
+        Err(e) => return Err(Error::from(e)),
     };
 
-    if tag.is_some() {
-        Track::insert_or_update(tag.unwrap(), path)?;
+    if tag.is_some() {}
+
+    match tag {
+        None => {
+            error!("No tag found in {:?}", path);
+        }
+        Some(tag) => {
+            Track::insert_or_update(tag, path)?;
+        }
     }
     Ok(())
 }

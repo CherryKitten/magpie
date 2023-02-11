@@ -5,10 +5,10 @@ use actix_cors::Cors;
 use actix_web::{web, App, HttpServer};
 
 use crate::config::AppConfig;
-
+use anyhow::Result;
 use diesel::SqliteConnection;
 
-use std::io;
+
 use std::sync::Mutex;
 
 use crate::db::establish_connection;
@@ -20,14 +20,10 @@ pub struct AppState {
     pub conn: Mutex<SqliteConnection>,
 }
 
-pub async fn start_server(config: &AppConfig) -> Result<(), io::Error> {
-    let mut builder = SslAcceptor::mozilla_intermediate(SslMethod::tls()).unwrap();
-    builder
-        .set_private_key_file("../test_data/key.pem", SslFiletype::PEM)
-        .unwrap();
-    builder
-        .set_certificate_chain_file("../test_data/cert.pem")
-        .unwrap();
+pub async fn start_server(config: &AppConfig) -> Result<()> {
+    let mut builder = SslAcceptor::mozilla_intermediate(SslMethod::tls())?;
+    builder.set_private_key_file("../test_data/key.pem", SslFiletype::PEM)?;
+    builder.set_certificate_chain_file("../test_data/cert.pem")?;
 
     HttpServer::new(move || {
         let cors = Cors::permissive()

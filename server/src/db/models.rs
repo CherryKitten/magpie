@@ -1,6 +1,6 @@
 use super::schema::*;
 use crate::db::establish_connection;
-use anyhow::Result;
+use anyhow::{Error, Result};
 use std::path::Path;
 
 use diesel::prelude::*;
@@ -11,6 +11,7 @@ use serde::Serialize as SerializeDerive;
 
 use crate::metadata::vectorize_tags;
 use lofty::{Accessor, ItemKey, Tag};
+use log::trace;
 
 #[derive(
     Debug,
@@ -43,11 +44,17 @@ impl Serialize for Track {
     {
         let mut state = serializer.serialize_struct("Track", 7)?;
 
-        let album = self.get_album().unwrap();
-
         state.serialize_field("id", &self.id)?;
         state.serialize_field("album_id", &self.album_id)?;
-        state.serialize_field("album", &album.title.unwrap_or("".to_string()))?;
+        match self.album_id {
+            None => {}
+            Some(id) => match Album::by_id(id) {
+                Ok(album) => {
+                    state.serialize_field("album", &album.title.unwrap_or("".to_string()))?
+                }
+                Err(_) => {}
+            },
+        }
         state.serialize_field("track_number", &self.track_number)?;
         state.serialize_field("disc_number", &self.disc_number)?;
         state.serialize_field("title", &self.title)?;
@@ -58,6 +65,7 @@ impl Serialize for Track {
 
 impl Track {
     pub fn insert_or_update(tag: Tag, path: &Path) -> Result<Track> {
+        trace!("Inserting or updating {:?}", path);
         let mut conn = establish_connection();
 
         let artists = vectorize_tags(tag.get_strings(&ItemKey::TrackArtist));
@@ -87,7 +95,10 @@ impl Track {
                 Some(track) => Some(track as i32),
                 None => None,
             }),
-            tracks::path.eq(path.to_str().unwrap().to_string()),
+            tracks::path.eq(match path.to_str() {
+                None => return Err(Error::msg("Could not get path")),
+                Some(path) => path.to_string(),
+            }),
             tracks::year.eq(match tag.year() {
                 Some(year) => Some(year as i32),
                 None => None,

@@ -22,12 +22,13 @@ pub async fn get_tracks() -> Result<impl Responder, error::Error> {
 #[get("/tracks/{id}")]
 pub async fn get_track(id: web::Path<i32>) -> Result<impl Responder, error::Error> {
     if let Ok(track) = Track::by_id(*id) {
-        let path = match track.path {
-            None => "".to_string(),
-            Some(path) => path,
-        };
+        //let path = match track.path {
+        //    None => "".to_string(),
+        //    Some(path) => path,
+        //};
 
-        Ok(NamedFile::open_async(path).await)
+        //Ok(NamedFile::open_async(path).await)
+        Ok(Json(track))
     } else {
         Err(error::ErrorNotFound("Track not found"))
     }
@@ -39,6 +40,16 @@ pub async fn get_albums() -> Result<impl Responder, error::Error> {
         Ok(Json(albums))
     } else {
         Err(error::ErrorInternalServerError("could not find any albums"))
+    }
+}
+
+#[get("/albums/{id}")]
+pub async fn get_album(id: web::Path<i32>) -> Result<impl Responder, error::Error> {
+    if let Ok(album) = Album::by_id(*id) {
+
+        Ok(Json(album))
+    } else {
+        Err(error::ErrorNotFound("Album not found"))
     }
 }
 

@@ -40,6 +40,7 @@ pub async fn start_server(config: &AppConfig) -> Result<()> {
             .service(routes::get_track)
             .service(routes::get_albums)
             .service(routes::get_artists)
+            .service(routes::get_album)
             .wrap(cors)
             .wrap(Logger::default())
     })

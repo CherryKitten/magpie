@@ -131,7 +131,9 @@ impl Track {
     pub fn all() -> Result<Vec<Track>> {
         let mut conn = establish_connection();
 
-        Ok(tracks::table.load::<Track>(&mut conn)?)
+        Ok(tracks::table
+            .order((tracks::album_id.asc(), tracks::disc_number.asc(), tracks::track_number.asc()))
+            .load::<Track>(&mut conn)?)
     }
     pub fn by_id(id: i32) -> Result<Track> {
         let mut conn = establish_connection();
@@ -142,6 +144,14 @@ impl Track {
         let mut conn = establish_connection();
 
         Ok((tracks::table.filter(tracks::path.eq(path.to_string()))).first(&mut conn)?)
+    }
+    pub fn by_album(id: i32) -> Result<Vec<Track>> {
+        let mut conn = establish_connection();
+
+        Ok(tracks::table
+            .filter(tracks::album_id.eq(id))
+            .order((tracks::disc_number.asc(), tracks::track_number.asc()))
+            .get_results(&mut conn)?)
     }
     pub fn get_album(&self) -> Result<Album> {
         let album_id = self.album_id.unwrap_or_default();
@@ -159,14 +169,34 @@ impl Track {
     Identifiable,
     AsChangeset,
     Selectable,
-    SerializeDerive,
     Deserialize,
 )]
 #[diesel(table_name = albums)]
+
 pub struct Album {
     id: i32,
     year: Option<i32>,
     pub title: Option<String>,
+}
+
+impl Serialize for Album {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut state = serializer.serialize_struct("Album", 3)?;
+
+        let tracks = match Track::by_album(self.id) {
+            Ok(tracks) => tracks,
+            Err(_) => vec![],
+        };
+
+        state.serialize_field("id", &self.id)?;
+        state.serialize_field("year", &self.year)?;
+        state.serialize_field("title", &self.title)?;
+        state.serialize_field("tracks", &tracks)?;
+        state.end()
+    }
 }
 
 impl Album {

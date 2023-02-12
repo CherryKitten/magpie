@@ -277,7 +277,6 @@ impl Album {
             AlbumFilters::Title(title) => select.filter(albums::title.eq(title)).into_boxed(),
             AlbumFilters::Year(year) => select.filter(albums::year.eq(year)).into_boxed(),
         };
-
         let result = query.load(&mut conn)?;
 
         Ok(result)
@@ -293,7 +292,6 @@ impl Album {
     QueryableByName,
     Identifiable,
     AsChangeset,
-    SerializeDerive,
     Deserialize,
 )]
 #[diesel(table_name = artists)]
@@ -306,6 +304,25 @@ pub enum ArtistFilters {
     All,
     Id(i32),
     Name(String),
+}
+
+impl Serialize for Artist {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut state = serializer.serialize_struct("Artist", 3)?;
+
+        let albums = match Artist::all_albums(self.id) {
+            Ok(albums) => albums,
+            Err(_) => vec![],
+        };
+
+        state.serialize_field("id", &self.id)?;
+        state.serialize_field("name", &self.name)?;
+        state.serialize_field("albums", &albums)?;
+        state.end()
+    }
 }
 
 impl Artist {
@@ -323,6 +340,17 @@ impl Artist {
         let result = query.load(&mut conn)?;
 
         Ok(result)
+    }
+
+    pub fn all_albums(id: i32) -> Result<Vec<Album>> {
+        let mut conn = establish_connection();
+
+        let artist = Artist::get(ArtistFilters::Id(id))?;
+
+        Ok(AlbumArtist::belonging_to(&artist)
+            .inner_join(albums::table)
+            .select(albums::all_columns)
+            .load::<Album>(&mut conn)?)
     }
 
     pub fn from_vec(artists: &Vec<String>) -> Result<()> {

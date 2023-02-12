@@ -2,7 +2,7 @@ mod routes;
 
 use actix_cors::Cors;
 
-use actix_web::{web, App, HttpServer};
+use actix_web::{web, App, HttpServer, middleware::Logger};
 
 use crate::config::AppConfig;
 use anyhow::Result;
@@ -41,6 +41,7 @@ pub async fn start_server(config: &AppConfig) -> Result<()> {
             .service(routes::get_albums)
             .service(routes::get_artists)
             .wrap(cors)
+            .wrap(Logger::default())
     })
     .bind_openssl((config.host.as_str(), config.port), builder)?
     .run()

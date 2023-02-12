@@ -1,12 +1,17 @@
 <script setup lang="ts">
-import { RouterLink, RouterView } from 'vue-router'
 import NavBarDesktop from "@/components/NavBarDesktop.vue";
+import Player from "@/components/Player.vue";
+import Body from "@/components/Body.vue";
+
+let searchText = "";
 </script>
 
 <template>
-  <NavBarDesktop />
 
-  <RouterView />
+  <NavBarDesktop />
+  <Body />
+  <Player />
+
 </template>
 
 <style scoped>

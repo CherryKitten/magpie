@@ -1,27 +1,24 @@
+<script setup lang="ts">
+import { RouterLink } from "vue-router";
+import { ref } from 'vue'
+
+const searchText = ref('Hello World!')
+
+</script>
+
 <template>
   <div class="navbar bg-base-200">
     <div class="flex-1">
-      <a class="btn btn-ghost normal-case text-xl">Magpie</a>
+      <RouterLink class="btn btn-ghost normal-case text-xl" :to="{ name: 'home'}">
+        Magpie
+      </RouterLink>
     </div>
     <div class="form-control">
-      <input type="text" placeholder="Search" class="input input-bordered" />
+      <input type="text" placeholder="Search" class="input input-bordered" v-model="searchText" />
     </div>
-    <ul class="ml-20 p-3 shadow bg-base-100 rounded-box">
-      <router-link :to="{ name: 'tracks'}">
-        Tracks
-      </router-link>
 
-    </ul>
   </div>
 </template>
-
-<script>
-import { RouterLink } from "vue-router";
-
-export default {
-  name: "NavBarDesktop"
-};
-</script>
 
 <style scoped>
 

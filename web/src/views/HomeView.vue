@@ -1,10 +1,12 @@
 <script setup lang="ts">
+const props = defineProps(["searchText"]);
+
 </script>
 
 <template>
   <main>
     <h1>
-      Hello World
+      {{ props.searchText }}
     </h1>
 
   </main>

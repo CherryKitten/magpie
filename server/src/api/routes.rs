@@ -28,8 +28,8 @@ pub async fn get_track(id: web::Path<i32>) -> Result<impl Responder, error::Erro
 
 #[get("/tracks/{id}/play")]
 pub async fn play_track(id: web::Path<i32>) -> Result<impl Responder, error::Error> {
-    if let Ok(track) = Track::get(TrackFilters::Id(*id)) {
-        if let Some(path) = &track[0].path {
+    if let Ok(mut track) = Track::get(TrackFilters::Id(*id)) {
+        if let Some(path) = &track.remove(0).path {
             Ok(NamedFile::open_async(path).await)
         } else {
             Err(error::ErrorInternalServerError(
@@ -43,7 +43,7 @@ pub async fn play_track(id: web::Path<i32>) -> Result<impl Responder, error::Err
 
 #[get("/albums")]
 pub async fn get_albums() -> Result<impl Responder, error::Error> {
-    if let Ok(albums) = Album::all() {
+    if let Ok(albums) = Album::get(AlbumFilters::All) {
         Ok(Json(albums))
     } else {
         Err(error::ErrorInternalServerError("could not find any albums"))
@@ -52,7 +52,7 @@ pub async fn get_albums() -> Result<impl Responder, error::Error> {
 
 #[get("/albums/{id}")]
 pub async fn get_album(id: web::Path<i32>) -> Result<impl Responder, error::Error> {
-    if let Ok(album) = Album::by_id(*id) {
+    if let Ok(album) = Album::get(AlbumFilters::Id(*id)) {
         Ok(Json(album))
     } else {
         Err(error::ErrorNotFound("Album not found"))
@@ -61,11 +61,20 @@ pub async fn get_album(id: web::Path<i32>) -> Result<impl Responder, error::Erro
 
 #[get("/artists")]
 pub async fn get_artists() -> Result<impl Responder, error::Error> {
-    if let Ok(artists) = Artist::all() {
+    if let Ok(artists) = Artist::get(ArtistFilters::All) {
         Ok(Json(artists))
     } else {
         Err(error::ErrorInternalServerError(
             "could not find any artists",
         ))
+    }
+}
+
+#[get("/artists/{id}")]
+pub async fn get_artist(id: web::Path<i32>) -> Result<impl Responder, error::Error> {
+    if let Ok(mut artist) = Artist::get(ArtistFilters::Id(*id)) {
+        Ok(Json(artist.remove(0)))
+    } else {
+        Err(error::ErrorNotFound("Album not found"))
     }
 }

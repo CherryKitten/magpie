@@ -18,6 +18,8 @@ use log::trace;
 
 type SqlType<M> = SqlTypeOf<AsSelect<M, Sqlite>>;
 type BoxedTrackQuery<'a> = tracks::BoxedQuery<'a, Sqlite, SqlType<Track>>;
+type BoxedAlbumQuery<'a> = albums::BoxedQuery<'a, Sqlite, SqlType<Album>>;
+type BoxedArtistQuery<'a> = artists::BoxedQuery<'a, Sqlite, SqlType<Artist>>;
 
 #[derive(
     Debug,
@@ -54,10 +56,9 @@ impl Serialize for Track {
         state.serialize_field("album_id", &self.album_id)?;
         match self.album_id {
             None => {}
-            Some(id) => match Album::by_id(id) {
-                Ok(album) => {
-                    state.serialize_field("album", &album.title.unwrap_or("".to_string()))?
-                }
+            Some(id) => match Album::get(AlbumFilters::Id(id)) {
+                Ok(mut album) => state
+                    .serialize_field("album", &album.remove(0).title.unwrap_or("".to_string()))?,
                 Err(_) => {}
             },
         }
@@ -74,7 +75,7 @@ pub enum TrackFilters {
     Id(i32),
     Path(String),
     AlbumId(i32),
-    //AlbumTitle(String),
+    AlbumTitle(String),
     Title(String),
     Year(i32),
 }
@@ -136,7 +137,8 @@ impl Track {
             diesel::insert_or_ignore_into(track_artists::table)
                 .values((
                     track_artists::track_id.eq(track.id),
-                    track_artists::artist_id.eq(Artist::by_name(&artist)?.id),
+                    track_artists::artist_id
+                        .eq(Artist::get(ArtistFilters::Name(artist))?.remove(0).id),
                 ))
                 .execute(&mut conn)?;
         }
@@ -163,7 +165,16 @@ impl Track {
                 .filter(tracks::album_id.eq(id))
                 .order((tracks::disc_number.asc(), tracks::track_number.asc()))
                 .into_boxed(),
-            //TrackFilters::AlbumTitle(title) => select.filter(tracks::album_id.eq()).order((tracks::disc_number.asc(), tracks::track_number.asc())).into_boxed(),
+            TrackFilters::AlbumTitle(title) => {
+                if let Ok(mut album) = Album::get(AlbumFilters::Title(title)) {
+                    select
+                        .filter(tracks::album_id.eq(album.remove(0).id))
+                        .order((tracks::disc_number.asc(), tracks::track_number.asc()))
+                        .into_boxed()
+                } else {
+                    return Err(Error::msg("Could not find album"));
+                }
+            }
             TrackFilters::Title(title) => select.filter(tracks::title.eq(title)).into_boxed(),
             TrackFilters::Year(year) => select.filter(tracks::year.eq(year)).into_boxed(),
         };
@@ -175,7 +186,8 @@ impl Track {
 
     pub fn get_album(&self) -> Result<Album> {
         if let Some(album_id) = self.album_id {
-            Ok(Album::by_id(album_id)?)
+            let album = Album::get(AlbumFilters::Id(album_id))?.remove(0);
+            Ok(album)
         } else {
             Err(Error::msg("Track has no album"))
         }
@@ -199,6 +211,13 @@ pub struct Album {
     id: i32,
     year: Option<i32>,
     pub title: Option<String>,
+}
+
+pub enum AlbumFilters {
+    All,
+    Id(i32),
+    Year(i32),
+    Title(String),
 }
 
 impl Serialize for Album {
@@ -237,7 +256,8 @@ impl Album {
             diesel::insert_into(album_artists::table)
                 .values((
                     album_artists::album_id.eq(album.id),
-                    album_artists::artist_id.eq(Artist::by_name(&artist)?.id),
+                    album_artists::artist_id
+                        .eq(Artist::get(ArtistFilters::Name(artist))?.remove(0).id),
                 ))
                 .on_conflict_do_nothing()
                 .execute(&mut conn)?;
@@ -245,18 +265,22 @@ impl Album {
 
         Ok(album)
     }
-    pub fn all() -> Result<Vec<Album>> {
+
+    pub fn get(filter: AlbumFilters) -> Result<Vec<Album>> {
         let mut conn = establish_connection();
 
-        Ok(albums::table.load::<Album>(&mut conn)?)
-    }
-    pub fn by_id(id: i32) -> Result<Album> {
-        let mut conn = establish_connection();
+        let select = albums::table.select(Album::as_select());
 
-        Ok(albums::table
-            .select(Album::as_select())
-            .find(id)
-            .first::<Album>(&mut conn)?)
+        let query: BoxedAlbumQuery = match filter {
+            AlbumFilters::All => select.into_boxed(),
+            AlbumFilters::Id(id) => select.find(id).into_boxed(),
+            AlbumFilters::Title(title) => select.filter(albums::title.eq(title)).into_boxed(),
+            AlbumFilters::Year(year) => select.filter(albums::year.eq(year)).into_boxed(),
+        };
+
+        let result = query.load(&mut conn)?;
+
+        Ok(result)
     }
 }
 
@@ -278,21 +302,27 @@ pub struct Artist {
     name: Option<String>,
 }
 
+pub enum ArtistFilters {
+    All,
+    Id(i32),
+    Name(String),
+}
+
 impl Artist {
-    pub fn all() -> Result<Vec<Artist>> {
+    pub fn get(filter: ArtistFilters) -> Result<Vec<Artist>> {
         let mut conn = establish_connection();
 
-        Ok(artists::table.load::<Artist>(&mut conn)?)
-    }
-    pub fn by_id(id: i32) -> Result<Artist> {
-        let mut conn = establish_connection();
+        let select = artists::table.select(Artist::as_select());
 
-        Ok(artists::table.find(id).first(&mut conn)?)
-    }
-    pub fn by_name(name: &str) -> Result<Artist> {
-        let mut conn = establish_connection();
+        let query: BoxedArtistQuery = match filter {
+            ArtistFilters::All => select.into_boxed(),
+            ArtistFilters::Id(id) => select.find(id).into_boxed(),
+            ArtistFilters::Name(name) => select.filter(artists::name.eq(name)).into_boxed(),
+        };
 
-        Ok((artists::table.filter(artists::name.eq(name.to_string()))).first(&mut conn)?)
+        let result = query.load(&mut conn)?;
+
+        Ok(result)
     }
 
     pub fn from_vec(artists: &Vec<String>) -> Result<()> {

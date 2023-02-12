@@ -2,12 +2,11 @@ mod routes;
 
 use actix_cors::Cors;
 
-use actix_web::{web, App, HttpServer, middleware::Logger};
+use actix_web::{middleware::Logger, web, App, HttpServer};
 
 use crate::config::AppConfig;
 use anyhow::Result;
 use diesel::SqliteConnection;
-
 
 use std::sync::Mutex;
 
@@ -40,8 +39,9 @@ pub async fn start_server(config: &AppConfig) -> Result<()> {
             .service(routes::get_track)
             .service(routes::play_track)
             .service(routes::get_albums)
-            .service(routes::get_artists)
             .service(routes::get_album)
+            .service(routes::get_artists)
+            .service(routes::get_artist)
             .wrap(cors)
             .wrap(Logger::default())
     })

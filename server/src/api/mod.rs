@@ -38,6 +38,7 @@ pub async fn start_server(config: &AppConfig) -> Result<()> {
             .service(routes::index)
             .service(routes::get_tracks)
             .service(routes::get_track)
+            .service(routes::play_track)
             .service(routes::get_albums)
             .service(routes::get_artists)
             .service(routes::get_album)

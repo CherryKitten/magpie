@@ -2,7 +2,6 @@ use crate::db::models::*;
 use actix_files::NamedFile;
 use actix_web::web::Json;
 use actix_web::{error, get, web, Responder};
-use log::info;
 
 #[get("/")]
 pub async fn index() -> impl Responder {
@@ -11,24 +10,32 @@ pub async fn index() -> impl Responder {
 
 #[get("/tracks")]
 pub async fn get_tracks() -> Result<impl Responder, error::Error> {
-    if let Ok(tracks) = Track::all() {
+    if let Ok(tracks) = Track::get(TrackFilters::All) {
         Ok(Json(tracks))
     } else {
         Err(error::ErrorInternalServerError("could not find any tracks"))
     }
 }
 
-
 #[get("/tracks/{id}")]
 pub async fn get_track(id: web::Path<i32>) -> Result<impl Responder, error::Error> {
-    if let Ok(track) = Track::by_id(*id) {
-        //let path = match track.path {
-        //    None => "".to_string(),
-        //    Some(path) => path,
-        //};
-
-        //Ok(NamedFile::open_async(path).await)
+    if let Ok(track) = Track::get(TrackFilters::Id(*id)) {
         Ok(Json(track))
+    } else {
+        Err(error::ErrorNotFound("Track not found"))
+    }
+}
+
+#[get("/tracks/{id}/play")]
+pub async fn play_track(id: web::Path<i32>) -> Result<impl Responder, error::Error> {
+    if let Ok(track) = Track::get(TrackFilters::Id(*id)) {
+        if let Some(path) = &track[0].path {
+            Ok(NamedFile::open_async(path).await)
+        } else {
+            Err(error::ErrorInternalServerError(
+                "Problem getting track file",
+            ))
+        }
     } else {
         Err(error::ErrorNotFound("Track not found"))
     }
@@ -46,7 +53,6 @@ pub async fn get_albums() -> Result<impl Responder, error::Error> {
 #[get("/albums/{id}")]
 pub async fn get_album(id: web::Path<i32>) -> Result<impl Responder, error::Error> {
     if let Ok(album) = Album::by_id(*id) {
-
         Ok(Json(album))
     } else {
         Err(error::ErrorNotFound("Album not found"))

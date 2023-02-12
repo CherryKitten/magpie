@@ -1,9 +1,12 @@
 use super::schema::*;
 use crate::db::establish_connection;
 use anyhow::{Error, Result};
+use diesel::helper_types::{AsSelect, SqlTypeOf};
+
 use std::path::Path;
 
 use diesel::prelude::*;
+use diesel::sqlite::Sqlite;
 
 use serde::ser::{Serialize, SerializeStruct, Serializer};
 use serde::Deserialize;
@@ -12,6 +15,9 @@ use serde::Serialize as SerializeDerive;
 use crate::metadata::vectorize_tags;
 use lofty::{Accessor, ItemKey, Tag};
 use log::trace;
+
+type SqlType<M> = SqlTypeOf<AsSelect<M, Sqlite>>;
+type BoxedTrackQuery<'a> = tracks::BoxedQuery<'a, Sqlite, SqlType<Track>>;
 
 #[derive(
     Debug,
@@ -61,6 +67,16 @@ impl Serialize for Track {
         state.serialize_field("year", &self.year)?;
         state.end()
     }
+}
+
+pub enum TrackFilters {
+    All,
+    Id(i32),
+    Path(String),
+    AlbumId(i32),
+    //AlbumTitle(String),
+    Title(String),
+    Year(i32),
 }
 
 impl Track {
@@ -128,35 +144,41 @@ impl Track {
         Ok(track)
     }
 
-    pub fn all() -> Result<Vec<Track>> {
+    pub fn get(filter: TrackFilters) -> Result<Vec<Track>> {
         let mut conn = establish_connection();
 
-        Ok(tracks::table
-            .order((tracks::album_id.asc(), tracks::disc_number.asc(), tracks::track_number.asc()))
-            .load::<Track>(&mut conn)?)
-    }
-    pub fn by_id(id: i32) -> Result<Track> {
-        let mut conn = establish_connection();
+        let select = tracks::table.select(Track::as_select());
 
-        Ok(tracks::table.find(id).first(&mut conn)?)
-    }
-    pub fn by_path(path: &str) -> Result<Track> {
-        let mut conn = establish_connection();
+        let query: BoxedTrackQuery = match filter {
+            TrackFilters::All => select
+                .order((
+                    tracks::album_id.asc(),
+                    tracks::disc_number.asc(),
+                    tracks::track_number.asc(),
+                ))
+                .into_boxed(),
+            TrackFilters::Id(id) => select.find(id).into_boxed(),
+            TrackFilters::Path(path) => select.filter(tracks::path.eq(path)).into_boxed(),
+            TrackFilters::AlbumId(id) => select
+                .filter(tracks::album_id.eq(id))
+                .order((tracks::disc_number.asc(), tracks::track_number.asc()))
+                .into_boxed(),
+            //TrackFilters::AlbumTitle(title) => select.filter(tracks::album_id.eq()).order((tracks::disc_number.asc(), tracks::track_number.asc())).into_boxed(),
+            TrackFilters::Title(title) => select.filter(tracks::title.eq(title)).into_boxed(),
+            TrackFilters::Year(year) => select.filter(tracks::year.eq(year)).into_boxed(),
+        };
 
-        Ok((tracks::table.filter(tracks::path.eq(path.to_string()))).first(&mut conn)?)
-    }
-    pub fn by_album(id: i32) -> Result<Vec<Track>> {
-        let mut conn = establish_connection();
+        let result = query.load(&mut conn)?;
 
-        Ok(tracks::table
-            .filter(tracks::album_id.eq(id))
-            .order((tracks::disc_number.asc(), tracks::track_number.asc()))
-            .get_results(&mut conn)?)
+        Ok(result)
     }
+
     pub fn get_album(&self) -> Result<Album> {
-        let album_id = self.album_id.unwrap_or_default();
-
-        Ok(Album::by_id(album_id)?)
+        if let Some(album_id) = self.album_id {
+            Ok(Album::by_id(album_id)?)
+        } else {
+            Err(Error::msg("Track has no album"))
+        }
     }
 }
 
@@ -186,7 +208,7 @@ impl Serialize for Album {
     {
         let mut state = serializer.serialize_struct("Album", 3)?;
 
-        let tracks = match Track::by_album(self.id) {
+        let tracks = match Track::get(TrackFilters::AlbumId(self.id)) {
             Ok(tracks) => tracks,
             Err(_) => vec![],
         };

@@ -56,10 +56,9 @@ impl Serialize for Track {
         state.serialize_field("album_id", &self.album_id)?;
         match self.album_id {
             None => {}
-            Some(id) => match Album::get(AlbumFilters::Id(id)) {
-                Ok(mut album) => state
-                    .serialize_field("album", &album.remove(0).title.unwrap_or("".to_string()))?,
-                Err(_) => {}
+            Some(id) => if let Ok(mut album) = Album::get(AlbumFilters::Id(id)) {
+                state
+                    .serialize_field("album", &album.remove(0).title.unwrap_or("".to_string()))?
             },
         }
         state.serialize_field("track_number", &self.track_number)?;
@@ -100,30 +99,15 @@ impl Track {
         };
 
         let insert = (
-            tracks::title.eq(match tag.title() {
-                Some(title) => Some(title.to_string()),
-                None => None,
-            }),
-            tracks::track_number.eq(match tag.track() {
-                Some(track) => Some(track as i32),
-                None => None,
-            }),
-            tracks::disc_number.eq(match tag.disk() {
-                Some(track) => Some(track as i32),
-                None => None,
-            }),
+            tracks::title.eq(tag.title().map(|title| title.to_string())),
+            tracks::track_number.eq(tag.track().map(|track| track as i32)),
+            tracks::disc_number.eq(tag.disk().map(|track| track as i32)),
             tracks::path.eq(match path.to_str() {
                 None => return Err(Error::msg("Could not get path")),
                 Some(path) => path.to_string(),
             }),
-            tracks::year.eq(match tag.year() {
-                Some(year) => Some(year as i32),
-                None => None,
-            }),
-            tracks::album_id.eq(match album {
-                Some(album) => Some(album.id),
-                None => None,
-            }),
+            tracks::year.eq(tag.year().map(|year| year as i32)),
+            tracks::album_id.eq(album.map(|album| album.id)),
         );
 
         let track: Track = diesel::insert_into(tracks::table)

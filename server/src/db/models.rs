@@ -56,10 +56,24 @@ impl Serialize for Track {
         state.serialize_field("album_id", &self.album_id)?;
         match self.album_id {
             None => {}
-            Some(id) => if let Ok(mut album) = Album::get(AlbumFilters::Id(id)) {
-                state
-                    .serialize_field("album", &album.remove(0).title.unwrap_or("".to_string()))?
-            },
+            Some(id) => {
+                if let Ok(mut album) = Album::get(AlbumFilters::Id(id)) {
+                    state.serialize_field(
+                        "album",
+                        &album.remove(0).title.unwrap_or("".to_string()),
+                    )?
+                }
+            }
+        }
+        if let Ok(artist) = self.get_artist() {
+            let mut artist_name = vec![];
+            let mut artist_id = vec![];
+            for i in artist {
+                artist_name.push(i.name.unwrap());
+                artist_id.push(i.id);
+            }
+            state.serialize_field("artist", &artist_name)?;
+            state.serialize_field("artist_id", &artist_id)?;
         }
         state.serialize_field("track_number", &self.track_number)?;
         state.serialize_field("disc_number", &self.disc_number)?;
@@ -176,6 +190,15 @@ impl Track {
             Err(Error::msg("Track has no album"))
         }
     }
+
+    pub fn get_artist(&self) -> Result<Vec<Artist>> {
+        let mut conn = establish_connection();
+
+        Ok(TrackArtist::belonging_to(&self)
+            .inner_join(artists::table)
+            .select(artists::all_columns)
+            .load::<Artist>(&mut conn)?)
+    }
 }
 
 #[derive(
@@ -211,15 +234,20 @@ impl Serialize for Album {
     {
         let mut state = serializer.serialize_struct("Album", 3)?;
 
-        let tracks = match Track::get(TrackFilters::AlbumId(self.id)) {
-            Ok(tracks) => tracks,
-            Err(_) => vec![],
+        let mut track_ids = vec![];
+        let mut track_titles = vec![];
+        if let Ok(tracks) = Track::get(TrackFilters::AlbumId(self.id)) {
+            for track in tracks {
+                track_ids.push(track.id);
+                track_titles.push(track.title.unwrap_or_default());
+            }
         };
 
         state.serialize_field("id", &self.id)?;
         state.serialize_field("year", &self.year)?;
         state.serialize_field("title", &self.title)?;
-        state.serialize_field("tracks", &tracks)?;
+        state.serialize_field("tracks", &track_titles)?;
+        state.serialize_field("track_ids", &track_ids)?;
         state.end()
     }
 }
@@ -297,14 +325,20 @@ impl Serialize for Artist {
     {
         let mut state = serializer.serialize_struct("Artist", 3)?;
 
-        let albums = match Artist::all_albums(self.id) {
-            Ok(albums) => albums,
-            Err(_) => vec![],
+        let mut album_ids = vec![];
+        let mut albums_vec = vec![];
+
+        if let Ok(albums) = Artist::all_albums(self.id) {
+            for album in albums {
+                album_ids.push(album.id);
+                albums_vec.push(album.title.unwrap_or_default());
+            }
         };
 
         state.serialize_field("id", &self.id)?;
         state.serialize_field("name", &self.name)?;
-        state.serialize_field("albums", &albums)?;
+        state.serialize_field("albums_ids", &album_ids)?;
+        state.serialize_field("albums", &albums_vec)?;
         state.end()
     }
 }

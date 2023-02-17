@@ -2,6 +2,7 @@ use super::schema::*;
 use crate::db::establish_connection;
 use anyhow::{Error, Result};
 use diesel::helper_types::{AsSelect, SqlTypeOf};
+use std::fs;
 
 use std::path::Path;
 
@@ -39,6 +40,7 @@ pub struct Track {
     pub id: i32,
     pub album_id: Option<i32>,
     pub path: Option<String>,
+    pub filesize: i32,
     pub track_number: Option<i32>,
     pub disc_number: Option<i32>,
     pub title: Option<String>,
@@ -75,6 +77,18 @@ impl Serialize for Track {
             state.serialize_field("artist", &artist_name)?;
             state.serialize_field("artist_id", &artist_id)?;
         }
+
+        if let Ok(artist) = self.get_album().unwrap().get_artist() {
+            let mut artist_name = vec![];
+            let mut artist_id = vec![];
+            for i in artist {
+                artist_name.push(i.name.unwrap());
+                artist_id.push(i.id);
+            }
+            state.serialize_field("album_artist", &artist_name)?;
+            state.serialize_field("album_artist_id", &artist_id)?;
+        }
+
         state.serialize_field("track_number", &self.track_number)?;
         state.serialize_field("disc_number", &self.disc_number)?;
         state.serialize_field("title", &self.title)?;
@@ -97,6 +111,7 @@ impl Track {
     pub fn insert_or_update(tag: Tag, path: &Path) -> Result<Track> {
         trace!("Inserting or updating {:?}", path);
         let mut conn = establish_connection();
+        let file_size = fs::metadata(path)?.len();
 
         let artists = vectorize_tags(tag.get_strings(&ItemKey::TrackArtist));
         let albumartists = vectorize_tags(tag.get_strings(&ItemKey::AlbumArtist));
@@ -120,6 +135,7 @@ impl Track {
                 None => return Err(Error::msg("Could not get path")),
                 Some(path) => path.to_string(),
             }),
+            tracks::filesize.eq(file_size as i32),
             tracks::year.eq(tag.year().map(|year| year as i32)),
             tracks::album_id.eq(album.map(|album| album.id)),
         );
@@ -198,6 +214,21 @@ impl Track {
             .inner_join(artists::table)
             .select(artists::all_columns)
             .load::<Artist>(&mut conn)?)
+    }
+
+    pub fn check(path: &Path, file_size: i32) -> bool {
+        let mut conn = establish_connection();
+
+        if tracks::table
+            .select(Track::as_select())
+            .filter(tracks::path.eq(path.to_str().unwrap_or_default()))
+            .filter(tracks::filesize.eq(file_size))
+            .first(&mut conn)
+            .is_ok()
+        {
+            return true;
+        }
+        false
     }
 }
 
@@ -292,6 +323,15 @@ impl Album {
         let result = query.load(&mut conn)?;
 
         Ok(result)
+    }
+
+    pub fn get_artist(&self) -> Result<Vec<Artist>> {
+        let mut conn = establish_connection();
+
+        Ok(AlbumArtist::belonging_to(self)
+            .inner_join(artists::table)
+            .select(artists::all_columns)
+            .load::<Artist>(&mut conn)?)
     }
 }
 

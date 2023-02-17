@@ -10,7 +10,10 @@ let searchText = "";
 
   <NavBarDesktop />
   <Body />
-  <Player />
+  <Suspense>
+    <Player />
+  </Suspense>
+
 
 </template>
 

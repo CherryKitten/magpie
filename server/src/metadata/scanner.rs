@@ -39,12 +39,17 @@ pub fn traverse_dir(dir: &Path) -> Result<()> {
 
 fn read_file(path: &Path) -> Result<()> {
     trace!("Reading file {:?}", path);
+    let file_size = fs::metadata(path)?.len() as i32;
+
+    if Track::check(path, file_size) {
+        trace!("Track {:?} already in DB", path);
+        return Err(Error::msg("Track already known"));
+    }
+
     let tag = match read_from_path(path) {
         Ok(file) => read_tags(file),
         Err(e) => return Err(Error::from(e)),
     };
-
-    if tag.is_some() {}
 
     match tag {
         None => {

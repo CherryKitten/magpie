@@ -36,6 +36,7 @@ diesel::table! {
         id -> Integer,
         album_id -> Nullable<Integer>,
         path -> Nullable<Text>,
+        filesize -> Integer,
         track_number -> Nullable<Integer>,
         disc_number -> Nullable<Integer>,
         title -> Nullable<Text>,

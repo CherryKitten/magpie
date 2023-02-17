@@ -1,32 +1,35 @@
 <script setup lang="ts">
 import { ref, watchEffect } from "vue";
+import { store } from "@/store";
 
-
-const tracklist = ref(null);
 const playing = ref(false);
 const volume = ref(0.5);
-const currentTrack = ref(null);
 const timestamp = ref(0);
 const duration = ref(null);
 
-tracklist.value = await (await fetch(`https://localhost:8080/albums/10`)).json();
-
-if (tracklist.value != null) {
-  tracklist.value = tracklist.value[0]["track_ids"];
-
-  currentTrack.value = await (await fetch(`https://localhost:8080/tracks/` + tracklist.value[0])).json();
-  currentTrack.value = currentTrack.value[0];
-}
+store.add_track(1);
+store.add_track(2);
+store.next_track();
 
 const player: HTMLAudioElement = new Audio();
 player.setAttribute("id", "audio");
-player.setAttribute("src", "https://localhost:8080/tracks/" + currentTrack.value.id + "/play");
+player.setAttribute("src", "https://localhost:8080/tracks/" + store.currentTrack.id + "/play");
 player.setAttribute("class", "hidden");
 player.setAttribute("preload", "true");
 player.addEventListener("timeupdate", updateProgress);
+player.addEventListener("ended", next_track)
 
 function updateProgress() {
   timestamp.value = player.currentTime;
+}
+
+function next_track() {
+  store.next_track();
+  player.currentTime = 0;
+  player.setAttribute("src", "https://localhost:8080/tracks/" + store.currentTrack.id + "/play");
+  if (playing.value) {
+    player.play();
+  }
 
 }
 
@@ -67,12 +70,12 @@ function togglePlaying() {
   <div class="bottom-0 sticky w-screen bg-base-200 py-6 px-4 flex flex-row align-center justify-between">
     <div class="flex flex-row gap-4">
       <div>
-        <img :src="currentTrack.art" alt="album art" class="h-12 w-12" />
+        <img :src="store.currentTrack.art" alt="album art" class="h-12 w-12" />
       </div>
       <div class="block">
-        <p>{{ currentTrack.title }}</p>
-        <p>{{ stringifyArtist(currentTrack.album_artist) }} - {{ currentTrack.album }}
-          ({{ currentTrack.year || "unknown" }})</p>
+        <p>{{ store.currentTrack.title }}</p>
+        <p>{{ stringifyArtist(store.currentTrack.album_artist) }} - {{ store.currentTrack.album }}
+          ({{ store.currentTrack.year || "unknown" }})</p>
         <p>{{ prettyTimestamp(player.currentTime) }} / {{ prettyTimestamp(player.duration) }}</p>
       </div>
     </div>
@@ -84,7 +87,7 @@ function togglePlaying() {
                            class="btn btn-ghost btn-sm" />
         <font-awesome-icon @click="togglePlaying" v-if="!playing" icon="fa-solid fa-play"
                            class="btn btn-ghost btn-sm" />
-        <font-awesome-icon icon="fa-solid fa-forward" class="btn btn-ghost btn-sm" />
+        <font-awesome-icon icon="fa-solid fa-forward" class="btn btn-ghost btn-sm" @click="next_track()" />
       </div>
       <input id="timebar" type="range" min="0" :max="player.duration"
              v-on:change="(e) => player.currentTime = e.target.value"

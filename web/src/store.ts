@@ -4,6 +4,9 @@ export const store = reactive({
   API: "https://localhost:8080/",
   playlist: [],
   currentTrack: null,
+  playing: false,
+  albums: [],
+  artists: [],
 
   add_track: async function (id: number) {
     let track = await (await fetch(this.API + "tracks/" + id)).json();
@@ -13,6 +16,7 @@ export const store = reactive({
       this.playlist.push(track[0]);
     } else {
       this.currentTrack = track[0];
+      this.playing = true;
     }
   },
 
@@ -20,15 +24,29 @@ export const store = reactive({
     if (this.playlist.length > 0) {
       // @ts-ignore
       this.currentTrack = this.playlist.shift();
+    } else {
+      this.currentTrack = null;
     }
   },
 
-  add_album: function (album) {
+  add_album: async function (album) {
     for (let track of album.track_ids) {
-      this.add_track(track);
+      await this.add_track(track);
     }
 
     console.log(this.playlist);
     console.log(this.currentTrack);
+  },
+
+  togglePlaying: function () {
+    this.playing = !this.playing;
+  },
+
+  getAlbums: async function () {
+    this.albums = await (await fetch(this.API + "albums")).json();
+  },
+
+  getArtists: async function () {
+    this.artists = await (await fetch(this.API + "artists")).json();
   },
 });

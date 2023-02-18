@@ -1,22 +1,20 @@
 <script setup>
 import { store } from "@/store";
+import AlbumList from "@/components/AlbumList.vue";
+import ArtistList from "@/components/ArtistList.vue";
 
-const albums = await (await fetch(store.API + "albums")).json();
+const props = defineProps(["view", "query"]);
 
 </script>
 
 <template>
   <div class="min-h-screen">
-    <ul>
-      <li v-for="album in albums" @click="store.add_album(album)">
-        {{ album.title }} {{ album.id }}
-
-        {{ album.track_ids }}
-      </li>
-    </ul>
-
-    TEST:
-    {{ store.playlist }}
+    <div class="overflow-x-auto">
+      <table class="table table-compact w-full">
+        <ArtistList v-if="props.view === 'artists'" />
+        <AlbumList v-if="props.view === 'albums'" :filter="props.query.artist" />
+      </table>
+    </div>
   </div>
 </template>
 

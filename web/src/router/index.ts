@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import HomeView from "@/views/HomeView.vue";
-import TrackView from "@/views/TrackView.vue";
+import Body from "@/components/Body.vue";
+
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -8,13 +8,15 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      component: HomeView
+      component: Body,
+      props: route => ({ query: route.query, view: "artists" })
     },
     {
-      path: '/tracks',
-      name: 'tracks',
-      component: TrackView
-    }
+      path: '/albums',
+      name: 'albums',
+      component: Body,
+      props: route => ({ query: route.query, view: "albums" })
+    },
   ]
 })
 

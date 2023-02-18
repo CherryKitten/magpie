@@ -1,17 +1,23 @@
 <script setup lang="ts">
 import NavBarDesktop from "@/components/NavBarDesktop.vue";
 import Player from "@/components/Player.vue";
-import Body from "@/components/Body.vue";
 import { store } from "@/store";
 
-let searchText = "";
+if (store.albums.length == 0) {
+  store.getAlbums();
+}
+if (store.artists.length == 0) {
+  store.getArtists();
+}
+
 </script>
 
 <template>
 
   <NavBarDesktop />
+
   <Suspense>
-    <Body />
+    <RouterView />
   </Suspense>
 
   <Suspense>

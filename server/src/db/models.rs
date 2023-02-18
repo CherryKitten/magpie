@@ -55,6 +55,10 @@ impl Serialize for Track {
         let mut state = serializer.serialize_struct("Track", 7)?;
 
         state.serialize_field("id", &self.id)?;
+        state.serialize_field("track_number", &self.track_number)?;
+        state.serialize_field("disc_number", &self.disc_number)?;
+        state.serialize_field("title", &self.title)?;
+        state.serialize_field("year", &self.year)?;
         state.serialize_field("album_id", &self.album_id)?;
         match self.album_id {
             None => {}
@@ -88,11 +92,6 @@ impl Serialize for Track {
             state.serialize_field("album_artist", &artist_name)?;
             state.serialize_field("album_artist_id", &artist_id)?;
         }
-
-        state.serialize_field("track_number", &self.track_number)?;
-        state.serialize_field("disc_number", &self.disc_number)?;
-        state.serialize_field("title", &self.title)?;
-        state.serialize_field("year", &self.year)?;
         state.end()
     }
 }
@@ -267,6 +266,9 @@ impl Serialize for Album {
 
         let mut track_ids = vec![];
         let mut track_titles = vec![];
+        let mut artist_ids = vec![];
+        let mut artist_names = vec![];
+
         if let Ok(tracks) = Track::get(TrackFilters::AlbumId(self.id)) {
             for track in tracks {
                 track_ids.push(track.id);
@@ -274,9 +276,18 @@ impl Serialize for Album {
             }
         };
 
+        if let Ok(artists) = self.get_artist() {
+            for artist in artists {
+                artist_ids.push(artist.id);
+                artist_names.push(artist.name.unwrap_or_default());
+            }
+        };
+
         state.serialize_field("id", &self.id)?;
-        state.serialize_field("year", &self.year)?;
         state.serialize_field("title", &self.title)?;
+        state.serialize_field("year", &self.year)?;
+        state.serialize_field("artist", &artist_names)?;
+        state.serialize_field("artist_ids", &artist_ids)?;
         state.serialize_field("tracks", &track_titles)?;
         state.serialize_field("track_ids", &track_ids)?;
         state.end()

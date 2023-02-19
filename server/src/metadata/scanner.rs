@@ -1,7 +1,8 @@
 use crate::config;
-use crate::db::models::*;
+
 use anyhow::{Error, Result};
 
+use crate::db::models::track::Track;
 use lofty::{read_from_path, Tag, TaggedFileExt};
 use log::{error, info, trace};
 use std::fs;

@@ -25,6 +25,16 @@ pub struct ArtistResponse {
     pub albums: Option<Vec<(i32, String)>>,
 }
 
+#[derive(Deserialize, Default, Clone)]
+pub struct ArtistFilter {
+    pub id: Option<i32>,
+    pub name: Option<String>,
+    pub limit: Option<i64>,
+    /// String content doesn't really matter, basically if this is Some(), we filter out all
+    /// Artists that have no own albums
+    pub with_albums: Option<String>,
+}
+
 impl ArtistResponse {
     fn from(value: &Artist, simple: bool) -> Self {
         let mut albums_vec: Vec<(i32, String)> = vec![];
@@ -35,11 +45,14 @@ impl ArtistResponse {
                 }
             };
         }
-
+        let albums = match albums_vec.len() {
+            0 => None,
+            _ => Some(albums_vec)
+        };
         ArtistResponse {
             id: value.id,
             name: value.name.clone(),
-            albums: Option::from(albums_vec),
+            albums,
         }
     }
 }
@@ -49,23 +62,21 @@ impl Artist {
         artists::table.select(Artist::as_select()).into_boxed()
     }
     pub fn get(
-        id: Option<i32>,
-        name: Option<String>,
-        limit: Option<i64>,
+        filter: ArtistFilter,
         simple: bool,
     ) -> Result<ResponseContainerThingyHowTheFuckDoICallThis<ArtistResponse>> {
         let mut conn = establish_connection();
         let mut query = Self::all();
 
-        if let Some(id) = id {
+        if let Some(id) = filter.id {
             query = query.filter(artists::id.eq(id))
         }
 
-        if let Some(name) = name {
+        if let Some(name) = filter.name {
             query = query.filter(artists::name.like("%".to_string() + &name + "%"))
         }
 
-        if let Some(limit) = limit {
+        if let Some(limit) = filter.limit {
             query = query.limit(limit)
         };
 
@@ -75,6 +86,10 @@ impl Artist {
         result
             .iter()
             .for_each(|elem| response.push(ArtistResponse::from(elem, simple)));
+
+        if filter.with_albums.is_some() {
+            response.retain(|a| a.albums.is_some())
+        }
 
         if response.len() == 1 {
             Ok(ResponseContainerThingyHowTheFuckDoICallThis::One(

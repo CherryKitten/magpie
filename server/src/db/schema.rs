@@ -13,6 +13,7 @@ diesel::table! {
         id -> Integer,
         year -> Nullable<Integer>,
         title -> Nullable<Text>,
+        art -> Nullable<Binary>,
     }
 }
 

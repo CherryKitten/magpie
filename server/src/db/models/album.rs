@@ -1,5 +1,7 @@
 use super::*;
-use crate::db::models::artist::Artist;
+use crate::db::models::artist::{Artist, ArtistFilter};
+use crate::db::models::track::TrackFilter;
+use lofty::Picture;
 
 type BoxedAlbumQuery<'a> = albums::BoxedQuery<'a, Sqlite, SqlType<Album>>;
 
@@ -11,6 +13,7 @@ pub struct Album {
     pub id: i32,
     pub year: Option<i32>,
     pub title: Option<String>,
+    pub art: Option<Vec<u8>>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -22,12 +25,27 @@ pub struct AlbumResponse {
     pub tracks: Option<Vec<(i32, String)>>,
 }
 
+#[derive(Deserialize, Default, Clone)]
+pub struct AlbumFilter {
+    pub id: Option<i32>,
+    pub title: Option<String>,
+    pub year: Option<i32>,
+    pub artist: Option<i32>,
+    pub limit: Option<i64>,
+}
+
 impl AlbumResponse {
     fn from(value: &Album, simple: bool) -> Self {
         let mut artists_vec: Vec<(i32, String)> = vec![];
         let mut tracks_vec: Vec<(i32, String)> = vec![];
         if !simple {
-            if let Ok(tracks) = Track::get(None, None, Some(value.id), None, None, true) {
+            if let Ok(tracks) = Track::get(
+                TrackFilter {
+                    album: Some(value.id),
+                    ..TrackFilter::default()
+                },
+                true,
+            ) {
                 match tracks {
                     ResponseContainerThingyHowTheFuckDoICallThis::One(track) => {
                         tracks_vec.push((track.id, track.title.unwrap()))
@@ -59,10 +77,19 @@ impl Album {
     fn all() -> BoxedAlbumQuery<'static> {
         albums::table.select(Album::as_select()).into_boxed()
     }
-    pub fn new(title: String, albumartists: Vec<String>, year: i32) -> Result<Album> {
+    pub fn new(
+        title: String,
+        albumartists: Vec<String>,
+        year: i32,
+        picture: Option<&Picture>,
+    ) -> Result<Album> {
         let mut conn = establish_connection();
 
-        let insert = (albums::title.eq(title), albums::year.eq(year));
+        let insert = (
+            albums::title.eq(title),
+            albums::year.eq(year),
+            albums::art.eq(picture.map(|picture| picture.data())),
+        );
         let album: Album = diesel::insert_into(albums::table)
             .values(&insert)
             .on_conflict((albums::title, albums::year))
@@ -74,8 +101,16 @@ impl Album {
             diesel::insert_into(album_artists::table)
                 .values((
                     album_artists::album_id.eq(album.id),
-                    album_artists::artist_id
-                        .eq(Artist::get(None, Some(artist), Some(1), true)?.value().id),
+                    album_artists::artist_id.eq(Artist::get(
+                        ArtistFilter {
+                            name: Some(artist),
+                            limit: Some(1),
+                            ..ArtistFilter::default()
+                        },
+                        true,
+                    )?
+                    .value()
+                    .id),
                 ))
                 .on_conflict_do_nothing()
                 .execute(&mut conn)?;
@@ -84,26 +119,29 @@ impl Album {
         Ok(album)
     }
     pub fn get(
-        id: Option<i32>,
-        title: Option<String>,
-        year: Option<i32>,
-        limit: Option<i64>,
+        filter: AlbumFilter,
         simple: bool,
     ) -> Result<ResponseContainerThingyHowTheFuckDoICallThis<AlbumResponse>> {
         let mut conn = establish_connection();
         let mut query = Self::all();
 
-        if let Some(id) = id {
+        if let Some(id) = filter.id {
             query = query.filter(albums::id.eq(id))
         }
-        if let Some(year) = year {
+        if let Some(year) = filter.year {
             query = query.filter(albums::year.eq(year))
         };
-        if let Some(title) = title {
+        if let Some(title) = filter.title {
             query = query.filter(albums::title.like("%".to_string() + &title + "%"))
         }
 
-        if let Some(limit) = limit {
+        if let Some(artist) = filter.artist {
+            let albums = Artist::all_albums(artist)?;
+            let ids: Vec<i32> = albums.iter().map(|e| e.id).collect();
+            query = query.filter(albums::id.eq_any(ids))
+        }
+
+        if let Some(limit) = filter.limit {
             query = query.limit(limit)
         };
 

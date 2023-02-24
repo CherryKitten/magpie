@@ -3,7 +3,7 @@ CREATE TABLE tracks
     id           INTEGER PRIMARY KEY NOT NULL,
     album_id     INTEGER,
     path         TEXT,
-    filesize     INTEGER NOT NULL,
+    filesize     INTEGER             NOT NULL,
     track_number INTEGER,
     disc_number  INTEGER,
     title        TEXT,
@@ -17,6 +17,7 @@ CREATE TABLE albums
     id    INTEGER PRIMARY KEY NOT NULL,
     year  INTEGER,
     title TEXT,
+    art   BLOB,
     UNIQUE (title, year)
 );
 

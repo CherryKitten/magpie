@@ -1,12 +1,11 @@
 <script setup lang="ts">
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
-async function get_tracks(): Promise<Array<Object>> {
-  const response = await fetch("https://localhost:8080/tracks");
-  return await response.json();
+import { store } from "@/store";
 
-}
+const props = defineProps(["query"]);
 
-const tracks = await get_tracks();
+store.getTracks("?album=" + props.query.album);
 
 </script>
 
@@ -16,22 +15,30 @@ const tracks = await get_tracks();
     <table class="table table-compact w-full">
       <thead>
       <tr>
-        <th>Album</th>
-        <th>Year</th>
         <th>Disc</th>
         <th>#</th>
         <th>Title</th>
+        <th>Album</th>
+        <th>Year</th>
+        <th></th>
+
 
       </tr>
       </thead>
       <tbody>
-      <tr v-for="track in tracks">
+      <tr v-for="track in store.tracks">
 
-        <th>{{ track.album }}</th>
-        <td>{{ track.year }}</td>
         <td>{{ track.disc_number }}</td>
         <td>{{ track.track_number }}</td>
         <td>{{ track.title }}</td>
+        <th>{{ track.album[1] }}</th>
+        <td>{{ track.year }}</td>
+        <td>
+          <FontAwesomeIcon icon="fa-solid fa-play"
+                           @click="store.add_track(track.id)"
+                           class="btn btn-ghost btn-sm" />
+        </td>
+
 
       </tr>
       </tbody>

@@ -1,18 +1,11 @@
 <script setup>
 import { store } from "@/store";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import router from "@/router";
 
-const props = defineProps(["filter"]);
+const props = defineProps(["query"]);
 
-let albums = store.albums;
-if (props.filter) {
-  albums = albums.filter((album) => {
-    for (let id in album.artist_ids) {
-      if (id == props.filter) {
-        return true;
-      }
-    }
-  });
-}
+store.getAlbums("?artist=" + props.query.artist);
 
 </script>
 
@@ -23,15 +16,23 @@ if (props.filter) {
     <th>Artist</th>
     <th>Album</th>
     <th>Year</th>
+    <th></th>
 
   </tr>
   </thead>
   <tbody>
-  <tr v-for="album in albums" @click="store.add_album(album)">
+  <tr v-for="album in store.albums">
 
     <th>{{ album.artist }}</th>
-    <td>{{ album.title }}</td>
+    <td @click="router.push({ path: '/tracks', query: { album: album.id }})">
+      {{ album.title }}
+    </td>
     <td>{{ album.year }}</td>
+    <td>
+      <FontAwesomeIcon icon="fa-solid fa-play"
+                       @click="store.add_album(album)"
+                       class="btn btn-ghost btn-sm" />
+    </td>
 
   </tr>
   </tbody>

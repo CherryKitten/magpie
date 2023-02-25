@@ -1,6 +1,6 @@
 use super::*;
-use crate::db::models::artist::Artist;
-
+use crate::db::models::album::AlbumFilter;
+use crate::db::models::artist::{Artist, ArtistFilter};
 type BoxedTrackQuery<'a> = tracks::BoxedQuery<'a, Sqlite, SqlType<Track>>;
 
 #[derive(
@@ -22,14 +22,22 @@ pub struct Track {
 #[derive(Serialize, Deserialize)]
 pub struct TrackResponse {
     pub id: i32,
+    pub title: Option<String>,
     pub track_number: Option<i32>,
     pub disc_number: Option<i32>,
-    pub title: Option<String>,
     pub year: Option<i32>,
-    pub album_id: Option<i32>,
-    pub album: Option<String>,
+    pub album: Option<(i32, String)>,
     pub artist: Option<Vec<(i32, String)>>,
     pub album_artist: Option<Vec<(i32, String)>>,
+}
+
+#[derive(Deserialize, Default, Clone)]
+pub struct TrackFilter {
+    pub id: Option<i32>,
+    pub title: Option<String>,
+    pub album: Option<i32>,
+    pub year: Option<i32>,
+    pub limit: Option<i64>,
 }
 
 impl TrackResponse {
@@ -56,13 +64,20 @@ impl TrackResponse {
             disc_number: value.disc_number,
             title: value.title.clone(),
             year: value.year,
-            album_id: value.album_id,
+
             album: {
                 match value.album_id {
                     None => None,
                     Some(id) => {
-                        if let Ok(album) = Album::get(Some(id), None, None, Some(1), true) {
-                            Some(album.value().title.unwrap())
+                        if let Ok(album) = Album::get(
+                            AlbumFilter {
+                                id: Some(id),
+                                limit: Some(1),
+                                ..AlbumFilter::default()
+                            },
+                            true
+                        ) {
+                            Some((id, album.value().title.unwrap()))
                         } else {
                             None
                         }
@@ -81,29 +96,25 @@ impl Track {
     }
 
     pub fn get(
-        id: Option<i32>,
-        title: Option<String>,
-        album: Option<i32>,
-        year: Option<i32>,
-        limit: Option<i64>,
-        simple: bool,
+        filter: TrackFilter,
+        simple: bool
     ) -> Result<ResponseContainerThingyHowTheFuckDoICallThis<TrackResponse>> {
         let mut conn = establish_connection();
         let mut query = Self::all();
 
-        if let Some(id) = id {
+        if let Some(id) = filter.id {
             query = query.filter(tracks::id.eq(id))
         }
-        if let Some(year) = year {
+        if let Some(year) = filter.year {
             query = query.filter(tracks::year.eq(year))
         };
-        if let Some(title) = title {
+        if let Some(title) = filter.title {
             query = query.filter(tracks::title.like("%".to_string() + &title + "%"))
         }
-        if let Some(album) = album {
+        if let Some(album) = filter.album {
             query = query.filter(tracks::album_id.eq(album))
         }
-        if let Some(limit) = limit {
+        if let Some(limit) = filter.limit {
             query = query.limit(limit)
         };
 
@@ -126,6 +137,7 @@ impl Track {
             Ok(ResponseContainerThingyHowTheFuckDoICallThis::Many(response))
         }
     }
+
     pub fn insert_or_update(tag: Tag, path: &Path) -> Result<Track> {
         trace!("Inserting or updating {:?}", path);
         let mut conn = establish_connection();
@@ -136,11 +148,20 @@ impl Track {
         Artist::from_vec(&artists)?;
         Artist::from_vec(&albumartists)?;
 
+        let picture = {
+            if tag.picture_count() > 0 {
+                Some(&tag.pictures()[0])
+            } else {
+                None
+            }
+        };
+
         let album = match tag.album() {
             Some(album) => Some(Album::new(
                 album.to_string(),
                 albumartists,
                 tag.year().unwrap_or_default() as i32,
+                picture,
             )?),
             None => None,
         };
@@ -169,10 +190,16 @@ impl Track {
             diesel::insert_or_ignore_into(track_artists::table)
                 .values((
                     track_artists::track_id.eq(track.id),
-                    track_artists::artist_id.eq(Artist::get(None, Some(artist), Some(1), true)
-                        .unwrap()
-                        .value()
-                        .id),
+                    track_artists::artist_id.eq(Artist::get(
+                        ArtistFilter {
+                            name: Some(artist),
+                            limit: Some(1),
+                            ..ArtistFilter::default()
+                        }, true
+                    )
+                    .unwrap()
+                    .value()
+                    .id),
                 ))
                 .execute(&mut conn)?;
         }

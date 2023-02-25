@@ -2,8 +2,6 @@
 import { store } from "@/store";
 import router from "@/router";
 
-const props = defineProps(["filter"]);
-
 </script>
 
 <template>

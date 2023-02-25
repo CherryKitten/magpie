@@ -1,6 +1,6 @@
-mod routes;
+pub mod routes;
 
-use actix_cors::Cors;
+
 
 use actix_web::{middleware::Logger, web, App, HttpServer};
 
@@ -25,10 +25,6 @@ pub async fn start_server(config: &AppConfig) -> Result<()> {
     builder.set_certificate_chain_file("../test_data/cert.pem")?;
 
     HttpServer::new(move || {
-        let cors = Cors::permissive()
-            .allow_any_header()
-            .allow_any_method()
-            .allow_any_origin();
         App::new()
             .app_data(web::Data::new(AppState {
                 app_name: "Magpie".to_string(),
@@ -43,7 +39,6 @@ pub async fn start_server(config: &AppConfig) -> Result<()> {
             .service(routes::get_album_art)
             .service(routes::get_artists)
             .service(routes::get_artist)
-            .wrap(cors)
             .wrap(Logger::default())
     })
     .bind_openssl((config.host.as_str(), config.port), builder)?

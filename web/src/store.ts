@@ -5,6 +5,7 @@ export const store = reactive({
   playlist: [],
   currentTrack: null,
   playing: false,
+  tracks: [],
   albums: [],
   artists: [],
 
@@ -30,23 +31,32 @@ export const store = reactive({
   },
 
   add_album: async function (album) {
-    for (let track of album.track_ids) {
-      await this.add_track(track);
+    for (let e of album.tracks) {
+      await this.add_track(e[0]);
     }
-
-    console.log(this.playlist);
-    console.log(this.currentTrack);
   },
 
   togglePlaying: function () {
     this.playing = !this.playing;
   },
 
-  getAlbums: async function () {
-    this.albums = await (await fetch(this.API + "albums")).json();
+  getAlbums: async function (query: Object) {
+    let url = this.API + "albums";
+    if (query) {
+      url += query;
+    }
+    this.albums = await (await fetch(url)).json();
+  },
+
+  getTracks: async function (query: Object) {
+    let url = this.API + "tracks";
+    if (query) {
+      url += query;
+    }
+    this.tracks = await (await fetch(url)).json();
   },
 
   getArtists: async function () {
-    this.artists = await (await fetch(this.API + "artists")).json();
+    this.artists = await (await fetch(this.API + "artists?with_albums")).json();
   },
 });

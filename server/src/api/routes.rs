@@ -4,7 +4,7 @@ pub fn config(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::resource("/library")
             .route(web::get().to(get_library))
-            .route(web::head().to(|| HttpResponse::MethodNotAllowed())),
+            .route(web::head().to(HttpResponse::MethodNotAllowed)),
     );
 }
 

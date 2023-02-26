@@ -18,7 +18,7 @@ async fn main() -> Result<()> {
 
     if config.get_string("library").is_err() {
         error!("No library configured, exiting...");
-        // If the library is not set correctly, we exist with EX_CONFIG (78)
+        // If the library is not set correctly, we exit with EX_CONFIG (78)
         std::process::exit(78)
     }
 

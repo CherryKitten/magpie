@@ -1,6 +1,7 @@
 use anyhow::Result;
 pub mod api;
 pub mod db;
+pub mod metadata;
 pub mod scheduler;
 pub use crate::db::establish_connection;
 use actix_web::rt::spawn;

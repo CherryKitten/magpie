@@ -4,15 +4,18 @@ use anyhow::Result;
 use log::info;
 use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
 
+pub mod routes;
+
 pub async fn run() -> Result<()> {
     let config = super::settings::get_config()?;
 
-    let server = HttpServer::new(move || App::new().wrap(Logger::default()));
+    let server =
+        HttpServer::new(move || App::new().configure(routes::config).wrap(Logger::default()));
 
     let address = (config.get_string("host")?, config.get_int("port")? as u16);
 
     info!("Starting API webserver on {}:{}", address.0, address.1);
-    
+
     if config.get_bool("ssl")? {
         let mut ssl_builder = SslAcceptor::mozilla_intermediate(SslMethod::tls())?;
 

@@ -1,0 +1,5 @@
+*/target
+test_data
+.env
+magpie.toml
+*/node_modules

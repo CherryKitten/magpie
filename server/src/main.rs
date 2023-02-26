@@ -1,4 +1,6 @@
-use anyhow::{Result};
+use anyhow::Result;
+pub mod db;
+pub use crate::db::establish_connection;
 pub mod settings;
 use log::{error, info};
 use std::collections::HashMap;
@@ -20,6 +22,12 @@ async fn main() -> Result<()> {
         error!("No library configured, exiting...");
         // If the library is not set correctly, we exit with EX_CONFIG (78)
         std::process::exit(78)
+    }
+
+    if establish_connection().is_err() {
+        error!("Failed connecting to database, exiting...");
+        // If the database connection fails, we exit with EX_UNAVAILABLE (69)
+        std::process::exit(69);
     }
 
     Ok(())

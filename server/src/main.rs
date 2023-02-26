@@ -1,4 +1,5 @@
 use anyhow::Result;
+pub mod api;
 pub mod db;
 pub mod scheduler;
 pub use crate::db::establish_connection;
@@ -32,7 +33,12 @@ async fn main() -> Result<()> {
         std::process::exit(69);
     }
 
-    spawn(scheduler::run_schedule()).await?;
+    spawn(scheduler::run_schedule());
+
+    spawn(api::run()).await?.unwrap_or_else(|error| {
+        error!("Could not start API server: {}", error);
+        std::process::exit(69)
+    });
 
     Ok(())
 }

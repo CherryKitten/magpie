@@ -1,3 +1,4 @@
+use crate::db::models::Track;
 use anyhow::Result;
 use lofty::{read_from_path, Accessor, Tag, TaggedFileExt};
 use log::{info, trace};
@@ -15,7 +16,11 @@ pub fn scan(dir: &Path) -> Result<()> {
         } else {
             match read_file(&path)? {
                 FileType::Music(tag) => {
-                    info!("Found track {:?}", tag.title())
+                    info!("Found track {:?}", tag.title());
+                    if !Track::check(&path) {
+                        Track::new(tag, &path)?;
+                    };
+                    continue;
                 }
                 FileType::Image => {
                     info!("Found image {:?}", path);

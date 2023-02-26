@@ -1,0 +1,43 @@
+use super::schema::*;
+use anyhow::Result;
+pub mod album;
+pub mod artist;
+pub mod track;
+pub mod genre;
+
+pub use album::Album;
+pub use artist::Artist;
+pub use track::Track;
+pub use genre::Genre;
+
+use diesel::prelude::*;
+
+#[derive(Debug, PartialEq, Eq, Queryable, Associations, Identifiable)]
+#[diesel(table_name = album_artists)]
+#[diesel(belongs_to(Album))]
+#[diesel(belongs_to(Artist))]
+pub struct AlbumArtist {
+    id: i32,
+    album_id: Option<i32>,
+    artist_id: Option<i32>,
+}
+
+#[derive(Debug, PartialEq, Eq, Queryable, Identifiable, Associations)]
+#[diesel(belongs_to(Track))]
+#[diesel(belongs_to(Artist))]
+#[diesel(table_name = track_artists)]
+pub struct TrackArtist {
+    id: i32,
+    track_id: Option<i32>,
+    artist_id: Option<i32>,
+}
+
+#[derive(Debug, PartialEq, Eq, Queryable, Identifiable, Associations)]
+#[diesel(belongs_to(Track))]
+#[diesel(belongs_to(Genre))]
+#[diesel(table_name = track_genres)]
+pub struct TrackGenre {
+    id: i32,
+    track_id: Option<i32>,
+    genre_id: Option<i32>,
+}

@@ -25,10 +25,25 @@ diesel::table! {
 }
 
 diesel::table! {
+    genres (id) {
+        id -> Integer,
+        name -> Text,
+    }
+}
+
+diesel::table! {
     track_artists (id) {
         id -> Integer,
         track_id -> Nullable<Integer>,
         artist_id -> Nullable<Integer>,
+    }
+}
+
+diesel::table! {
+    track_genres (id) {
+        id -> Integer,
+        track_id -> Integer,
+        genre_id -> Integer,
     }
 }
 
@@ -49,12 +64,16 @@ diesel::joinable!(album_artists -> albums (album_id));
 diesel::joinable!(album_artists -> artists (artist_id));
 diesel::joinable!(track_artists -> artists (artist_id));
 diesel::joinable!(track_artists -> tracks (track_id));
+diesel::joinable!(track_genres -> genres (genre_id));
+diesel::joinable!(track_genres -> tracks (track_id));
 diesel::joinable!(tracks -> albums (album_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     album_artists,
     albums,
     artists,
+    genres,
     track_artists,
+    track_genres,
     tracks,
 );

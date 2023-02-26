@@ -46,4 +46,21 @@ CREATE TABLE album_artists
     FOREIGN KEY (album_id) REFERENCES albums (id),
     FOREIGN KEY (artist_id) REFERENCES artists (id),
     UNIQUE (album_id, artist_id)
+);
+
+CREATE TABLE genres
+(
+    id   INTEGER PRIMARY KEY NOT NULL,
+    name TEXT                NOT NULL,
+    UNIQUE (name)
+);
+
+CREATE TABLE track_genres
+(
+    id       INTEGER PRIMARY KEY NOT NULL,
+    track_id INTEGER             NOT NULL,
+    genre_id INTEGER             NOT NULL,
+    FOREIGN KEY (track_id) REFERENCES tracks (id),
+    FOREIGN KEY (genre_id) REFERENCES genres (id),
+    UNIQUE (track_id, genre_id)
 )

@@ -1,6 +1,8 @@
 use anyhow::Result;
 pub mod db;
+pub mod scheduler;
 pub use crate::db::establish_connection;
+use actix_web::rt::spawn;
 pub mod settings;
 use log::{error, info};
 use std::collections::HashMap;
@@ -29,6 +31,8 @@ async fn main() -> Result<()> {
         // If the database connection fails, we exit with EX_UNAVAILABLE (69)
         std::process::exit(69);
     }
+
+    spawn(scheduler::run_schedule()).await?;
 
     Ok(())
 }

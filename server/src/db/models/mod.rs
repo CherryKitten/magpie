@@ -2,13 +2,13 @@ use super::schema::*;
 use anyhow::Result;
 pub mod album;
 pub mod artist;
-pub mod track;
 pub mod genre;
+pub mod track;
 
 pub use album::Album;
 pub use artist::Artist;
-pub use track::Track;
 pub use genre::Genre;
+pub use track::Track;
 
 use diesel::prelude::*;
 

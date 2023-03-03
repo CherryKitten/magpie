@@ -12,7 +12,7 @@ pub use track::Track;
 
 use diesel::prelude::*;
 
-#[derive(Debug, PartialEq, Eq, Queryable, Associations, Identifiable)]
+#[derive(Identifiable, Queryable, Associations, Eq, PartialEq, Debug)]
 #[diesel(table_name = album_artists)]
 #[diesel(belongs_to(Album))]
 #[diesel(belongs_to(Artist))]
@@ -22,7 +22,7 @@ pub struct AlbumArtist {
     artist_id: Option<i32>,
 }
 
-#[derive(Debug, PartialEq, Eq, Queryable, Identifiable, Associations)]
+#[derive(Identifiable, Queryable, Associations, Eq, PartialEq, Debug)]
 #[diesel(belongs_to(Track))]
 #[diesel(belongs_to(Artist))]
 #[diesel(table_name = track_artists)]
@@ -32,7 +32,7 @@ pub struct TrackArtist {
     artist_id: Option<i32>,
 }
 
-#[derive(Debug, PartialEq, Eq, Queryable, Identifiable, Associations)]
+#[derive(Identifiable, Queryable, Associations, Eq, PartialEq, Debug)]
 #[diesel(belongs_to(Track))]
 #[diesel(belongs_to(Genre))]
 #[diesel(table_name = track_genres)]

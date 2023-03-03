@@ -34,12 +34,12 @@ impl Album {
             .unwrap();
 
         for artist in albumartists {
-            Artist::get_by_name_or_new(artist.clone())?;
+            Artist::get_by_title_or_new(&artist)?;
 
             diesel::insert_into(album_artists::table)
                 .values((
                     album_artists::album_id.eq(album.id),
-                    album_artists::artist_id.eq(Artist::get_by_name(artist)?.id),
+                    album_artists::artist_id.eq(Artist::get_by_title(&artist)?.id),
                 ))
                 .on_conflict_do_nothing()
                 .execute(&mut conn)?;
@@ -48,17 +48,35 @@ impl Album {
         Ok(album)
     }
 
-    pub fn get_by_title(title: String) -> Result<Self> {
+    pub fn get_by_id(id: i32) -> Result<Self> {
         let mut conn = establish_connection()?;
 
-        if let Ok(album) = albums::table
-            .select(Album::as_select())
-            .filter(albums::title.like(title))
-            .first(&mut conn)
-        {
-            Ok(album)
-        } else {
-            Err(anyhow::Error::msg("Failed to get album"))
-        }
+       Ok(albums::table.find(id).first(&mut conn)?)
+    }
+
+    pub fn get_by_title(title: &str) -> Result<Self> {
+        let mut conn = establish_connection()?;
+
+        Ok(albums::table
+            .select(albums::all_columns)
+            .filter(albums::title.eq(title))
+            .get_result::<Album>(&mut conn)?)
+    }
+
+    pub fn get_by_artist_id(id: i32) -> Result<Vec<Self>> {
+        let mut conn = establish_connection()?;
+
+        let artist: Artist = artists::table.find(id).first(&mut conn)?;
+
+        Ok(AlbumArtist::belonging_to(&artist)
+            .inner_join(albums::table)
+            .select(albums::all_columns)
+            .get_results(&mut conn)?)
+    }
+
+    pub fn get_by_artist_title(title: &str) -> Result<Vec<Self>> {
+        let id = Artist::get_by_title(title)?.id;
+
+        Self::get_by_artist_id(id)
     }
 }

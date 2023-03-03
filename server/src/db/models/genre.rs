@@ -1,3 +1,4 @@
+use crate::establish_connection;
 use super::*;
 
 #[derive(Debug, PartialEq, Eq, Selectable, Queryable, QueryableByName, Insertable, Identifiable)]
@@ -8,8 +9,8 @@ pub struct Genre {
 }
 
 impl Genre {
-    pub(crate) fn get_or_new(name: String) -> Result<Genre> {
-        let mut conn = crate::establish_connection()?;
+    pub fn get_or_new(name: String) -> Result<Genre> {
+        let mut conn = establish_connection()?;
 
         if let Ok(genre) = genres::table
             .select(Genre::as_select())
@@ -22,5 +23,27 @@ impl Genre {
                 .values(genres::name.eq(name))
                 .get_result(&mut conn)?)
         }
+    }
+
+    pub fn get_all() -> Result<Vec<Self>> {
+        let mut conn = establish_connection()?;
+
+        Ok(genres::table
+            .select(genres::all_columns)
+            .get_results(&mut conn)?)
+    }
+
+    pub fn get_by_id(id: i32) -> Result<Self> {
+        let mut conn = establish_connection()?;
+
+        Ok(genres::table.find(id).first(&mut conn)?)
+    }
+
+    pub fn get_by_title(title: &str) -> Result<Self> {
+        let mut conn = establish_connection()?;
+        Ok(genres::table
+            .select(genres::all_columns)
+            .filter(genres::name.eq(title))
+            .first::<Genre>(&mut conn)?)
     }
 }

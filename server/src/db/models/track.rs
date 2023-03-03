@@ -8,7 +8,9 @@ use log::trace;
 use std::fs;
 use std::path::Path;
 
-#[derive(Debug, PartialEq, Eq, Selectable, Queryable, QueryableByName, Insertable)]
+#[derive(
+    Debug, PartialEq, Eq, Selectable, Queryable, QueryableByName, Insertable, Identifiable,
+)]
 #[diesel(belongs_to(Album))]
 #[diesel(table_name = tracks)]
 pub struct Track {

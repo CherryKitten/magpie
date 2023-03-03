@@ -2,7 +2,9 @@ use super::*;
 use crate::establish_connection;
 use anyhow::Result;
 
-#[derive(Debug, PartialEq, Eq, Selectable, Queryable, QueryableByName, Insertable)]
+#[derive(
+    Debug, PartialEq, Eq, Selectable, Queryable, QueryableByName, Insertable, Identifiable,
+)]
 #[diesel(table_name = artists)]
 pub struct Artist {
     pub id: i32,

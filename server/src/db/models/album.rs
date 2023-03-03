@@ -3,7 +3,9 @@ use crate::establish_connection;
 use anyhow::Result;
 use lofty::Picture;
 
-#[derive(Debug, PartialEq, Eq, Selectable, Queryable, QueryableByName, Insertable)]
+#[derive(
+    Debug, PartialEq, Eq, Selectable, Queryable, QueryableByName, Insertable, Identifiable,
+)]
 #[diesel(table_name = albums)]
 pub struct Album {
     pub id: i32,

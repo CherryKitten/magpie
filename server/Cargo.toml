@@ -6,14 +6,15 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+config = "0.13.3"
+openssl = "0.10.45"
+actix-web = { version = "4.3.1", features = ["openssl"] }
 actix-files = "0.6.2"
-actix-web = { version = "4", features = ["openssl"] }
-openssl = { version = "0.10" }
 lofty = "0.11.0"
 serde = { version = "1.0.152", features = ["derive"] }
-diesel = { version = "2.0.0", features = ["sqlite", "returning_clauses_for_sqlite_3_35"] }
-dotenvy = "0.15"
-anyhow = "1.0.68"
-log = "0.4.17"
+diesel = { version = "2.0.3", features = ["sqlite", "returning_clauses_for_sqlite_3_35"] }
 env_logger = "0.10.0"
-config = "0.13.3"
+log = "0.4.17"
+anyhow = "1.0.69"
+serde_with = "2.2.0"
+

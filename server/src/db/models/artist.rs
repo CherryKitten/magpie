@@ -1,6 +1,7 @@
 use super::*;
 use crate::establish_connection;
 use anyhow::Result;
+use std::collections::HashMap;
 
 #[derive(
     Debug, PartialEq, Eq, Selectable, Queryable, QueryableByName, Insertable, Identifiable,
@@ -50,5 +51,13 @@ impl Artist {
             Ok(artist) => Ok(artist),
             Err(_) => Artist::new(title),
         }
+    }
+
+    pub fn into_map(self) -> crate::api::response_container::Map {
+        let mut map = HashMap::new();
+
+        map.insert(self.name.unwrap_or_default(), self.id);
+
+        crate::api::response_container::Map::new(map).unwrap_or_default()
     }
 }

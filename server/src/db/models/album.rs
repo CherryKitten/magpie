@@ -2,6 +2,7 @@ use super::*;
 use crate::establish_connection;
 use anyhow::Result;
 use lofty::Picture;
+use std::collections::HashMap;
 
 #[derive(
     Debug, PartialEq, Eq, Selectable, Queryable, QueryableByName, Insertable, Identifiable,
@@ -48,10 +49,18 @@ impl Album {
         Ok(album)
     }
 
+    pub fn all() -> Result<Vec<Self>> {
+        let mut conn = establish_connection()?;
+
+        Ok(albums::table
+            .select(albums::all_columns)
+            .get_results(&mut conn)?)
+    }
+
     pub fn get_by_id(id: i32) -> Result<Self> {
         let mut conn = establish_connection()?;
 
-       Ok(albums::table.find(id).first(&mut conn)?)
+        Ok(albums::table.find(id).first(&mut conn)?)
     }
 
     pub fn get_by_title(title: &str) -> Result<Self> {
@@ -78,5 +87,26 @@ impl Album {
         let id = Artist::get_by_title(title)?.id;
 
         Self::get_by_artist_id(id)
+    }
+
+    pub fn into_map(self) -> crate::api::response_container::Map {
+        let mut map = HashMap::new();
+
+        map.insert(self.title.unwrap_or_default(), self.id);
+
+        crate::api::response_container::Map::new(map).unwrap_or_default()
+    }
+
+    pub fn get_artist(&self) -> Result<Vec<Artist>> {
+        let mut conn = establish_connection()?;
+
+        Ok(AlbumArtist::belonging_to(self)
+            .inner_join(artists::table)
+            .select(artists::all_columns)
+            .get_results(&mut conn)?)
+    }
+
+    pub fn get_tracks(&self) -> Result<Vec<Track>> {
+        Track::get_by_album_id(self.id)
     }
 }

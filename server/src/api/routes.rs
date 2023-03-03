@@ -7,8 +7,12 @@ pub fn config(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/api")
             .service(get_index)
+            .service(get_tracks)
             .service(get_track)
-            .service(get_artists),
+            .service(get_artists)
+            .service(get_artist)
+            .service(get_albums)
+            .service(get_album),
     );
 }
 
@@ -16,15 +20,33 @@ pub fn config(cfg: &mut web::ServiceConfig) {
 async fn get_index() -> impl Responder {
     let mut map = HashMap::new();
 
-    map.insert("test", "auch test");
+    map.insert(
+        "Magpie",
+        "Selfhosted Music streaming service wirtten in Rust",
+    );
+    map.insert("Version", "0.2.0");
 
     Json(map)
+}
+
+#[get("/tracks")]
+pub async fn get_tracks() -> HttpResponse {
+    if let Ok(tracks) = crate::db::Track::get_all() {
+        let mut metadata: Vec<MetaDataContainer> = vec![];
+        for a in tracks {
+            metadata.push(MetaDataContainer::from(a));
+        }
+        HttpResponse::Ok().json(ResponseContainer::new(metadata))
+    } else {
+        HttpResponse::NotFound().finish()
+    }
 }
 
 #[get("/tracks/{id}")]
 pub async fn get_track(id: web::Path<i32>) -> HttpResponse {
     if let Ok(track) = crate::db::Track::get_by_id(*id) {
-        HttpResponse::Ok().json(MetaDataContainer::from(track))
+        let metadata: Vec<MetaDataContainer> = vec![MetaDataContainer::from(track)];
+        HttpResponse::Ok().json(ResponseContainer::new(metadata))
     } else {
         HttpResponse::NotFound().finish()
     }
@@ -37,6 +59,39 @@ pub async fn get_artists() -> HttpResponse {
         for a in artist {
             metadata.push(MetaDataContainer::from(a));
         }
+        HttpResponse::Ok().json(ResponseContainer::new(metadata))
+    } else {
+        HttpResponse::NotFound().finish()
+    }
+}
+
+#[get("/artists/{id}")]
+pub async fn get_artist(id: web::Path<i32>) -> HttpResponse {
+    if let Ok(artist) = crate::db::Artist::get_by_id(*id) {
+        let metadata: Vec<MetaDataContainer> = vec![MetaDataContainer::from(artist)];
+        HttpResponse::Ok().json(ResponseContainer::new(metadata))
+    } else {
+        HttpResponse::NotFound().finish()
+    }
+}
+
+#[get("/albums")]
+pub async fn get_albums() -> HttpResponse {
+    if let Ok(albums) = crate::db::Album::all() {
+        let mut metadata: Vec<MetaDataContainer> = vec![];
+        for a in albums {
+            metadata.push(MetaDataContainer::from(a));
+        }
+        HttpResponse::Ok().json(ResponseContainer::new(metadata))
+    } else {
+        HttpResponse::NotFound().finish()
+    }
+}
+
+#[get("/albums/{id}")]
+pub async fn get_album(id: web::Path<i32>) -> HttpResponse {
+    if let Ok(album) = crate::db::Album::get_by_id(*id) {
+        let metadata: Vec<MetaDataContainer> = vec![MetaDataContainer::from(album)];
         HttpResponse::Ok().json(ResponseContainer::new(metadata))
     } else {
         HttpResponse::NotFound().finish()

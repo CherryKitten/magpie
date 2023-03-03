@@ -1,4 +1,8 @@
-use serde::{Deserialize, Serialize};
+use crate::db::{Album, Artist, Track};
+use serde::{
+    ser::{Serialize as SerializeT, SerializeMap},
+    Deserialize, Serialize, Serializer,
+};
 use serde_with::skip_serializing_none;
 use std::collections::HashMap;
 
@@ -27,37 +31,90 @@ enum ContentType {
     Track,
 }
 
-#[derive(Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Eq, PartialEq, Serialize, Deserialize, Default)]
 pub struct Map(HashMap<String, i32>);
+
+impl Map {
+    pub fn new(map: HashMap<String, i32>) -> Option<Self> {
+        Some(Self(map))
+    }
+    pub fn from_artists(v: Vec<Artist>) -> Option<Self> {
+        let mut map = HashMap::new();
+        for i in v {
+            map.insert(i.name.unwrap_or_default(), i.id);
+        }
+        Map::new(map)
+    }
+    pub fn from_tracks(v: Vec<Track>) -> Option<Self> {
+        let mut map = HashMap::new();
+        for i in v {
+            map.insert(i.title.unwrap_or_default(), i.id);
+        }
+        Map::new(map)
+    }
+}
 
 #[skip_serializing_none]
 #[derive(Eq, PartialEq, Serialize, Deserialize, Default)]
 pub struct MetaDataContainer {
     kind: ContentType,
     id: i32,
-    index: Option<Index>,
+    index: Option<Order>,
     title: Option<String>,
     year: Option<i32>,
     art: Option<String>,
     genre: Option<Vec<String>>,
     children: Option<Map>,
-    parents: Option<Map>,
+    tracks: Option<Vec<TrackSummary>>,
+    album: Option<Map>,
+    artist: Option<Map>,
+    album_artist: Option<Map>,
     grandparents: Option<Map>,
     media: Option<MediaContainer>,
 }
 
-#[skip_serializing_none]
 #[derive(Eq, PartialEq, Serialize, Deserialize, Default)]
-pub struct Index(Option<i32>, Option<i32>);
+pub struct TrackSummary {
+    title: String,
+    id: i32,
+    disc_number: i32,
+    track_number: i32,
+}
 
-impl Index {
-    fn new(disc: Option<i32>, track: Option<i32>) -> Option<Self> {
-        Option::from(Index(disc, track))
+impl From<Track> for TrackSummary {
+    fn from(v: Track) -> Self {
+        Self {
+            title: v.title.unwrap_or_default(),
+            id: v.id,
+            disc_number: v.disc_number.unwrap_or(1),
+            track_number: v.track_number.unwrap_or(1),
+        }
     }
 }
 
-impl From<crate::db::Artist> for MetaDataContainer {
-    fn from(v: crate::db::Artist) -> Self {
+#[derive(Eq, PartialEq, Deserialize, Default)]
+pub struct Order(Option<i32>, Option<i32>);
+impl SerializeT for Order {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut s = serializer.serialize_map(Some(2))?;
+        s.serialize_entry("disc_number", &self.0.unwrap_or(1))?;
+        s.serialize_entry("track_number", &self.1.unwrap_or(1))?;
+
+        s.end()
+    }
+}
+
+impl Order {
+    fn new(disc: Option<i32>, track: Option<i32>) -> Option<Self> {
+        Option::from(Order(disc, track))
+    }
+}
+
+impl From<Artist> for MetaDataContainer {
+    fn from(v: Artist) -> Self {
         MetaDataContainer {
             kind: ContentType::Artist,
             id: v.id,
@@ -66,14 +123,61 @@ impl From<crate::db::Artist> for MetaDataContainer {
         }
     }
 }
-impl From<crate::db::Track> for MetaDataContainer {
-    fn from(v: crate::db::Track) -> Self {
+impl From<Track> for MetaDataContainer {
+    fn from(v: Track) -> Self {
+        let album = v.get_album();
+        let artist = v.get_artist();
+
         MetaDataContainer {
             kind: ContentType::Track,
             id: v.id,
-            index: Index::new(v.disc_number, v.track_number),
+            index: Order::new(v.disc_number, v.track_number),
+            title: v.title.to_owned(),
+            year: v.year,
+            artist: {
+                if let Ok(artist) = artist {
+                    Map::from_artists(artist)
+                } else {
+                    None
+                }
+            },
+            album: {
+                if let Ok(album) = album {
+                    Some(album.into_map())
+                } else {
+                    None
+                }
+            },
+            ..MetaDataContainer::default()
+        }
+    }
+}
+
+impl From<Album> for MetaDataContainer {
+    fn from(v: Album) -> Self {
+        let artist = v.get_artist();
+        let tracks = v.get_tracks();
+        MetaDataContainer {
+            kind: ContentType::Album,
+            id: v.id,
             title: v.title,
             year: v.year,
+            album_artist: {
+                if let Ok(artist) = artist {
+                    Map::from_artists(artist)
+                } else {
+                    None
+                }
+            },
+            tracks: {
+                Some(
+                    tracks
+                        .unwrap()
+                        .into_iter()
+                        .map(TrackSummary::from)
+                        .collect(),
+                )
+            },
             ..MetaDataContainer::default()
         }
     }

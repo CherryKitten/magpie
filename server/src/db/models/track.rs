@@ -152,11 +152,12 @@ impl Track {
         Ok(tracks::table
             .select(tracks::all_columns)
             .filter(tracks::album_id.eq(id))
+            .order_by(tracks::disc_number)
+            .then_order_by(tracks::track_number)
             .get_results(&mut conn)?)
     }
 
     pub fn get_by_album_title(title: &str) -> Result<Vec<Self>> {
-
         let id = Album::get_by_title(title)?.id;
 
         Self::get_by_album_id(id)
@@ -194,5 +195,18 @@ impl Track {
         let id = Genre::get_by_title(title)?.id;
 
         Self::get_by_genre_id(id)
+    }
+
+    pub fn get_album(&self) -> Result<Album> {
+        Album::get_by_id(self.album_id.ok_or(Error::msg("No album found"))?)
+    }
+
+    pub fn get_artist(&self) -> Result<Vec<Artist>> {
+        let mut conn = establish_connection()?;
+
+        Ok(TrackArtist::belonging_to(self)
+            .inner_join(artists::table)
+            .select(artists::all_columns)
+            .get_results(&mut conn)?)
     }
 }

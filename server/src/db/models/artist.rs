@@ -20,6 +20,14 @@ impl Artist {
         Artist::get_by_name(name)
     }
 
+    pub fn all() -> Result<Vec<Self>> {
+        let mut conn = establish_connection()?;
+
+        Ok(artists::table
+            .select(artists::all_columns)
+            .get_results(&mut conn)?)
+    }
+
     pub fn get_by_name(name: String) -> Result<Self> {
         let mut conn = establish_connection().unwrap();
 

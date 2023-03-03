@@ -1,5 +1,6 @@
 use super::*;
 
+use crate::establish_connection;
 use crate::metadata::vectorize_tags;
 use anyhow::{Error, Result};
 use lofty::{Accessor, ItemKey, Tag};
@@ -112,5 +113,11 @@ impl Track {
             .filter(tracks::filesize.eq(file_size))
             .first(&mut conn)
             .is_ok()
+    }
+
+    pub fn get_by_id(id: i32) -> Result<Self> {
+        let mut conn = establish_connection()?;
+
+        Ok(tracks::table.find(id).first(&mut conn)?)
     }
 }

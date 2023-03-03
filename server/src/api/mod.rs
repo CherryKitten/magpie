@@ -4,6 +4,7 @@ use anyhow::Result;
 use log::info;
 use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
 
+pub mod response_container;
 pub mod routes;
 
 pub async fn run() -> Result<()> {

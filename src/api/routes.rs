@@ -30,8 +30,8 @@ async fn get_index() -> impl Responder {
 }
 
 #[get("/tracks")]
-pub async fn get_tracks() -> HttpResponse {
-    if let Ok(tracks) = crate::db::Track::get_all() {
+pub async fn get_tracks(filter: web::Query<HashMap<String, String>>) -> HttpResponse {
+    if let Ok(tracks) = crate::db::Track::get(filter.into_inner()) {
         let mut metadata: Vec<MetaDataContainer> = vec![];
         for a in tracks {
             metadata.push(MetaDataContainer::from(a));
@@ -53,8 +53,8 @@ pub async fn get_track(id: web::Path<i32>) -> HttpResponse {
 }
 
 #[get("/artists")]
-pub async fn get_artists() -> HttpResponse {
-    if let Ok(artist) = crate::db::Artist::all() {
+pub async fn get_artists(filter: web::Query<HashMap<String, String>>) -> HttpResponse {
+    if let Ok(artist) = crate::db::Artist::get(filter.into_inner()) {
         let mut metadata: Vec<MetaDataContainer> = vec![];
         for a in artist {
             metadata.push(MetaDataContainer::from(a));
@@ -76,8 +76,8 @@ pub async fn get_artist(id: web::Path<i32>) -> HttpResponse {
 }
 
 #[get("/albums")]
-pub async fn get_albums() -> HttpResponse {
-    if let Ok(albums) = crate::db::Album::all() {
+pub async fn get_albums(filter: web::Query<HashMap<String, String>>) -> HttpResponse {
+    if let Ok(albums) = crate::db::Album::get(filter.into_inner()) {
         let mut metadata: Vec<MetaDataContainer> = vec![];
         for a in albums {
             metadata.push(MetaDataContainer::from(a));

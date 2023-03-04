@@ -1,6 +1,6 @@
 use super::*;
 use crate::establish_connection;
-use anyhow::Result;
+use anyhow::{Error, Result};
 use std::collections::HashMap;
 
 #[derive(
@@ -23,6 +23,29 @@ impl Artist {
         Artist::get_by_title(name)
     }
 
+     pub fn get(mut filter: HashMap<String, String>) -> Result<Vec<Self>> {
+        let mut conn = establish_connection()?;
+
+        let mut select = artists::table.select(Artist::as_select()).into_boxed();
+
+        if let Some(title) = filter.remove("title") {
+            select = select.filter(artists::name.like(format!("%{title}%")));
+        }
+
+        select = select.limit(filter.remove("limit").unwrap_or("50".to_string()).parse()?);
+
+        select = select
+            .distinct()
+            .order_by(artists::name);
+
+        let result: Vec<Artist> = select.load(&mut conn)?;
+        if !result.is_empty() {
+            Ok(result)
+        } else {
+            Err(Error::msg("Did not find any tracks"))
+        }
+    }
+
     pub fn all() -> Result<Vec<Self>> {
         let mut conn = establish_connection()?;
 
@@ -41,7 +64,7 @@ impl Artist {
         let mut conn = establish_connection()?;
         Ok(artists::table
             .select(artists::all_columns)
-            .filter(artists::name.eq(title))
+            .filter(artists::name.like(title))
             .get_result::<Artist>(&mut conn)?)
     }
 

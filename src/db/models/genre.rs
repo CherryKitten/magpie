@@ -45,7 +45,7 @@ impl Genre {
         let mut conn = establish_connection()?;
         Ok(genres::table
             .select(genres::all_columns)
-            .filter(genres::name.eq(title))
+            .filter(genres::name.like(title))
             .first::<Genre>(&mut conn)?)
     }
 }

@@ -1,6 +1,6 @@
 use super::*;
 use crate::establish_connection;
-use anyhow::Result;
+use anyhow::{Error, Result};
 use lofty::Picture;
 use std::collections::HashMap;
 
@@ -49,6 +49,30 @@ impl Album {
         Ok(album)
     }
 
+     pub fn get(mut filter: HashMap<String, String>) -> Result<Vec<Self>> {
+        let mut conn = establish_connection()?;
+
+        let mut select = albums::table.select(Album::as_select()).into_boxed();
+
+        if let Some(title) = filter.remove("title") {
+            select = select.filter(albums::title.like(format!("%{title}%")));
+        }
+
+        select = select.limit(filter.remove("limit").unwrap_or("50".to_string()).parse()?);
+
+        select = select
+            .distinct()
+            .order_by(albums::year)
+            .then_order_by(albums::title);
+
+        let result: Vec<Album> = select.load(&mut conn)?;
+        if !result.is_empty() {
+            Ok(result)
+        } else {
+            Err(Error::msg("Did not find any tracks"))
+        }
+    }
+
     pub fn all() -> Result<Vec<Self>> {
         let mut conn = establish_connection()?;
 
@@ -68,7 +92,7 @@ impl Album {
 
         Ok(albums::table
             .select(albums::all_columns)
-            .filter(albums::title.eq(title))
+            .filter(albums::title.like(title))
             .get_result::<Album>(&mut conn)?)
     }
 

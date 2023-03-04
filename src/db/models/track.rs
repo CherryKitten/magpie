@@ -1,4 +1,5 @@
 use super::*;
+use std::collections::HashMap;
 
 use crate::establish_connection;
 use crate::metadata::vectorize_tags;
@@ -117,6 +118,35 @@ impl Track {
             .is_ok()
     }
 
+    pub fn get(mut filter: HashMap<String, String>) -> Result<Vec<Self>> {
+        let mut conn = establish_connection()?;
+
+        let mut select = tracks::table.select(Track::as_select()).into_boxed();
+
+        if let Some(title) = filter.remove("title") {
+            select = select.filter(tracks::title.like(format!("%{title}%")));
+        }
+
+        if let Some(album) = filter.remove("album") {
+            let album = Album::get_by_title(&album)?;
+            select = select.filter(tracks::album_id.eq(album.id));
+        }
+
+        select = select.limit(filter.remove("limit").unwrap_or("50".to_string()).parse()?);
+
+        select = select
+            .distinct()
+            .order_by(tracks::disc_number)
+            .then_order_by(tracks::track_number);
+
+        let result: Vec<Track> = select.load(&mut conn)?;
+        if !result.is_empty() {
+            Ok(result)
+        } else {
+            Err(Error::msg("Did not find any tracks"))
+        }
+    }
+
     pub fn get_all() -> Result<Vec<Self>> {
         let mut conn = establish_connection()?;
 
@@ -135,7 +165,7 @@ impl Track {
         let mut conn = establish_connection()?;
         Ok(tracks::table
             .select(tracks::all_columns)
-            .filter(tracks::title.eq(title))
+            .filter(tracks::title.like(title))
             .first::<Track>(&mut conn)?)
     }
 
@@ -143,7 +173,7 @@ impl Track {
         let mut conn = establish_connection()?;
         Ok(tracks::table
             .select(tracks::all_columns)
-            .filter(tracks::title.eq(title))
+            .filter(tracks::title.like(title))
             .get_results::<Track>(&mut conn)?)
     }
 

@@ -1,6 +1,7 @@
 use crate::api::response_container::{MetaDataContainer, ResponseContainer};
+use actix_files::NamedFile;
 use actix_web::web::Json;
-use actix_web::{get, web, HttpResponse, Responder};
+use actix_web::{get, web, Either, HttpResponse, Responder};
 use std::collections::HashMap;
 
 pub fn config(cfg: &mut web::ServiceConfig) {
@@ -9,6 +10,7 @@ pub fn config(cfg: &mut web::ServiceConfig) {
             .service(get_index)
             .service(get_tracks)
             .service(get_track)
+            .service(play_track)
             .service(get_artists)
             .service(get_artist)
             .service(get_albums)
@@ -49,6 +51,24 @@ pub async fn get_track(id: web::Path<i32>) -> HttpResponse {
         HttpResponse::Ok().json(ResponseContainer::new(metadata))
     } else {
         HttpResponse::NotFound().finish()
+    }
+}
+
+#[get("/tracks/{id}/play")]
+pub async fn play_track(id: web::Path<i32>) -> Either<HttpResponse, NamedFile> {
+    if let Ok(track) = crate::db::Track::get_by_id(*id) {
+        if let Some(path) = track.path {
+            let file = NamedFile::open_async(path).await;
+            if let Ok(file) = file {
+                Either::Right(file)
+            } else {
+                Either::Left(HttpResponse::InternalServerError().body("Error getting file."))
+            }
+        } else {
+            Either::Left(HttpResponse::InternalServerError().body("Error getting file."))
+        }
+    } else {
+        Either::Left(HttpResponse::NotFound().finish())
     }
 }
 

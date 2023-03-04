@@ -133,6 +133,7 @@ impl Track {
         }
 
         select = select.limit(filter.remove("limit").unwrap_or("50".to_string()).parse()?);
+        select = select.offset(filter.remove("offset").unwrap_or("0".to_string()).parse()?);
 
         select = select
             .distinct()

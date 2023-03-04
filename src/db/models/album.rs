@@ -49,7 +49,7 @@ impl Album {
         Ok(album)
     }
 
-     pub fn get(mut filter: HashMap<String, String>) -> Result<Vec<Self>> {
+    pub fn get(mut filter: HashMap<String, String>) -> Result<Vec<Self>> {
         let mut conn = establish_connection()?;
 
         let mut select = albums::table.select(Album::as_select()).into_boxed();
@@ -59,6 +59,7 @@ impl Album {
         }
 
         select = select.limit(filter.remove("limit").unwrap_or("50".to_string()).parse()?);
+        select = select.offset(filter.remove("offset").unwrap_or("0".to_string()).parse()?);
 
         select = select
             .distinct()

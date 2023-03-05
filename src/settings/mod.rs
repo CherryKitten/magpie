@@ -7,6 +7,7 @@ pub fn get_config() -> Result<Config> {
         .set_default("ssl", false)?
         .set_default("host", "localhost")?
         .set_default("port", 8080)?
+        .set_default("dev", false)?
         .add_source(config::File::with_name("magpie.toml"))
         .add_source(config::Environment::with_prefix("MAGPIE"))
         .build()?)

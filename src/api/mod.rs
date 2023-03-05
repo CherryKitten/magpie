@@ -1,3 +1,4 @@
+use actix_cors::Cors;
 use actix_web::middleware::Logger;
 use actix_web::{App, HttpServer};
 use anyhow::Result;
@@ -9,9 +10,19 @@ pub mod routes;
 
 pub async fn run() -> Result<()> {
     let config = super::settings::get_config()?;
+    let dev = config.get_bool("dev")?;
 
-    let server =
-        HttpServer::new(move || App::new().configure(routes::config).wrap(Logger::default()));
+    let server = HttpServer::new(move|| {
+        let mut cors = Cors::default();
+        if dev {
+            cors = cors.allow_any_origin();
+        };
+
+        App::new()
+            .configure(routes::config)
+            .wrap(Logger::default())
+            .wrap(cors)
+    });
 
     let address = (config.get_string("host")?, config.get_int("port")? as u16);
 

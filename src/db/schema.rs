@@ -55,8 +55,18 @@ diesel::table! {
         filesize -> Integer,
         track_number -> Nullable<Integer>,
         disc_number -> Nullable<Integer>,
+        disc_title -> Nullable<Text>,
+        content_group -> Nullable<Text>,
         title -> Nullable<Text>,
+        subtitle -> Nullable<Text>,
         year -> Nullable<Integer>,
+        release_date -> Nullable<Text>,
+        bpm -> Nullable<Text>,
+        length -> Nullable<Integer>,
+        initial_key -> Nullable<Text>,
+        language -> Nullable<Text>,
+        original_title -> Nullable<Text>,
+        added_at -> Nullable<Text>,
     }
 }
 

@@ -1,13 +1,26 @@
 CREATE TABLE tracks
 (
-    id           INTEGER PRIMARY KEY NOT NULL,
-    album_id     INTEGER,
-    path         TEXT,
-    filesize     INTEGER             NOT NULL,
-    track_number INTEGER,
-    disc_number  INTEGER,
-    title        TEXT,
-    year         INTEGER,
+    id             INTEGER PRIMARY KEY NOT NULL,
+    album_id       INTEGER DEFAULT NULL,
+    path           TEXT    DEFAULT NULL,
+    filesize       INTEGER             NOT NULL,
+    track_number   INTEGER DEFAULT 1,
+    disc_number    INTEGER DEFAULT 1,
+    disc_title     TEXT    DEFAULT NULL,
+    content_group  TEXT    DEFAULT NULL,
+    title          TEXT    DEFAULT NULL,
+    subtitle       TEXT    DEFAULT NULL,
+    year           INTEGER DEFAULT NULL,
+    release_date   TEXT    DEFAULT NULL,
+    bpm            TEXT    DEFAULT NULL,
+    length         INTEGER DEFAULT NULL,
+    initial_key    TEXT    DEFAULT NULL,
+    language       TEXT    DEFAULT NULL,
+    /*TODO
+    label_id     INTEGER,
+    */
+    original_title TEXT,
+    added_at       TEXT    DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (album_id) REFERENCES albums (id) ON DELETE RESTRICT,
     UNIQUE (path) ON CONFLICT REPLACE
 );

@@ -4,13 +4,13 @@ use std::collections::HashMap;
 use crate::establish_connection;
 use crate::metadata::vectorize_tags;
 use anyhow::{Error, Result};
-use lofty::{Accessor, ItemKey, Tag};
+use lofty::{Accessor, FileProperties, ItemKey, Tag};
 use log::trace;
 use std::fs;
 use std::path::Path;
 
 #[derive(
-    Debug, PartialEq, Eq, Selectable, Queryable, QueryableByName, Insertable, Identifiable,
+    Debug, Default, PartialEq, Eq, Selectable, Queryable, QueryableByName, Insertable, Identifiable,
 )]
 #[diesel(belongs_to(Album))]
 #[diesel(table_name = tracks)]
@@ -21,12 +21,25 @@ pub struct Track {
     pub filesize: i32,
     pub track_number: Option<i32>,
     pub disc_number: Option<i32>,
+    pub disc_title: Option<String>,
+    pub content_group: Option<String>,
     pub title: Option<String>,
+    pub subtitle: Option<String>,
     pub year: Option<i32>,
+    pub release_date: Option<String>,
+    pub bpm: Option<String>,
+    pub length: Option<i32>,
+    pub initial_key: Option<String>,
+    pub language: Option<String>,
+    // TODO: pub label_id: Option<i32>,
+    pub original_title: Option<String>,
+    pub added_at: Option<String>,
 }
 
 impl Track {
-    pub fn new(tag: Tag, path: &Path) -> Result<Self> {
+    pub fn new(tag: (Tag, FileProperties), path: &Path) -> Result<Self> {
+        let (tag, properties) = tag;
+
         trace!("Inserting or updating {:?}", path);
         let mut conn = establish_connection()?;
         let file_size = fs::metadata(path)?.len();
@@ -61,15 +74,23 @@ impl Track {
 
         let insert = (
             tracks::title.eq(tag.title().map(|title| title.to_string())),
-            tracks::track_number.eq(tag.track().map(|track| track as i32)),
-            tracks::disc_number.eq(tag.disk().map(|track| track as i32)),
+            tracks::track_number.eq(tag.track().unwrap_or(1) as i32),
+            tracks::disc_number.eq(tag.disk().unwrap_or(1) as i32),
             tracks::path.eq(match path.to_str() {
                 None => return Err(Error::msg("Could not get path")),
                 Some(path) => path.to_string(),
             }),
             tracks::filesize.eq(file_size as i32),
             tracks::year.eq(tag.year().map(|year| year as i32)),
+            tracks::release_date.eq(tag.get_string(&ItemKey::OriginalReleaseDate)),
             tracks::album_id.eq(album.map(|album| album.id)),
+            tracks::length.eq(properties.duration().as_secs() as i32),
+            tracks::disc_title.eq(tag.get_string(&ItemKey::SetSubtitle)),
+            tracks::content_group.eq(tag.get_string(&ItemKey::ContentGroup)),
+            tracks::subtitle.eq(tag.get_string(&ItemKey::TrackSubtitle)),
+            tracks::bpm.eq(tag.get_string(&ItemKey::BPM)),
+            tracks::initial_key.eq(tag.get_string(&ItemKey::InitialKey)),
+            tracks::language.eq(tag.get_string(&ItemKey::Language)),
         );
 
         let track: Track = diesel::insert_into(tracks::table)

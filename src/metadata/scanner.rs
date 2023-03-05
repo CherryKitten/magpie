@@ -1,6 +1,6 @@
 use crate::db::models::Track;
 use anyhow::Result;
-use lofty::{read_from_path, Accessor, Tag, TaggedFileExt};
+use lofty::{read_from_path, Accessor, Tag, TaggedFileExt, AudioFile, FileProperties};
 use log::{info, trace};
 use std::fs;
 use std::path::Path;
@@ -16,7 +16,7 @@ pub fn scan(dir: &Path) -> Result<()> {
         } else {
             match read_file(&path)? {
                 FileType::Music(tag) => {
-                    info!("Found track {:?}", tag.title());
+                    info!("Found track {:?}", tag.0.title());
                     if !Track::check(&path) {
                         Track::new(tag, &path)?;
                     };
@@ -37,7 +37,7 @@ pub fn scan(dir: &Path) -> Result<()> {
 }
 
 enum FileType {
-    Music(Tag),
+    Music((Tag, FileProperties)),
     Image,
     Unsupported,
 }
@@ -59,7 +59,7 @@ fn read_file(path: &Path) -> Result<FileType> {
     Ok(file)
 }
 
-fn read_tags(path: &Path) -> Result<Tag> {
+fn read_tags(path: &Path) -> Result<(Tag, FileProperties)> {
     let file = read_from_path(path)?;
 
     let tag = match file.primary_tag() {
@@ -70,5 +70,7 @@ fn read_tags(path: &Path) -> Result<Tag> {
         },
     };
 
-    Ok(tag.to_owned())
+    let properties = file.properties();
+
+    Ok((tag.to_owned(), properties.to_owned()))
 }

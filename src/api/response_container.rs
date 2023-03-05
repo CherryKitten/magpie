@@ -60,9 +60,13 @@ pub struct MetaDataContainer {
     kind: ContentType,
     id: i32,
     index: Option<Order>,
+    disc_title: Option<String>,
+    content_group: Option<String>,
     title: Option<String>,
+    subtitle: Option<String>,
     year: Option<i32>,
-    art: Option<String>,
+    release_date: Option<String>,
+    art: Option<bool>,
     genre: Option<Vec<String>>,
     children: Option<Map>,
     tracks: Option<Vec<TrackSummary>>,
@@ -70,6 +74,11 @@ pub struct MetaDataContainer {
     artist: Option<Map>,
     album_artist: Option<Map>,
     grandparents: Option<Map>,
+    bpm: Option<String>,
+    length: Option<i32>,
+    initial_key: Option<String>,
+    language: Option<String>,
+    added_at: Option<String>,
     media: Option<MediaContainer>,
 }
 
@@ -134,6 +143,15 @@ impl From<Track> for MetaDataContainer {
             index: Order::new(v.disc_number, v.track_number),
             title: v.title.to_owned(),
             year: v.year,
+            disc_title: v.disc_title,
+            content_group: v.content_group,
+            subtitle: v.subtitle,
+            release_date: v.release_date,
+            bpm: v.bpm,
+            length: v.length,
+            initial_key: v.initial_key,
+            language: v.language,
+            added_at: v.added_at,
             artist: {
                 if let Ok(artist) = artist {
                     Map::from_artists(artist)
@@ -162,6 +180,7 @@ impl From<Album> for MetaDataContainer {
             id: v.id,
             title: v.title,
             year: v.year,
+            art: Option::from(v.art.is_some()),
             album_artist: {
                 if let Ok(artist) = artist {
                     Map::from_artists(artist)

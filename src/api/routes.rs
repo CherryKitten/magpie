@@ -14,7 +14,8 @@ pub fn config(cfg: &mut web::ServiceConfig) {
             .service(get_artists)
             .service(get_artist)
             .service(get_albums)
-            .service(get_album),
+            .service(get_album)
+            .service(get_album_art),
     );
 }
 
@@ -113,6 +114,19 @@ pub async fn get_album(id: web::Path<i32>) -> HttpResponse {
     if let Ok(album) = crate::db::Album::get_by_id(*id) {
         let metadata: Vec<MetaDataContainer> = vec![MetaDataContainer::from(album)];
         HttpResponse::Ok().json(ResponseContainer::new(metadata))
+    } else {
+        HttpResponse::NotFound().finish()
+    }
+}
+
+#[get("/albums/{id}/art")]
+pub async fn get_album_art(id: web::Path<i32>) -> HttpResponse {
+    if let Ok(album) = crate::db::Album::get_by_id(*id) {
+        if let Some(art) = album.art {
+            HttpResponse::Ok().body(art)
+        } else {
+            HttpResponse::NotFound().finish()
+        }
     } else {
         HttpResponse::NotFound().finish()
     }

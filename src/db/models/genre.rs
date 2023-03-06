@@ -11,12 +11,12 @@ pub struct Genre {
 }
 
 impl Genre {
-    pub fn get_or_new(name: String) -> Result<Genre> {
+    pub fn get_or_new(name: &str) -> Result<Genre> {
         let mut conn = establish_connection()?;
 
         if let Ok(genre) = genres::table
             .select(Genre::as_select())
-            .filter(genres::name.like(name.clone()))
+            .filter(genres::name.like(name))
             .first(&mut conn)
         {
             Ok(genre)

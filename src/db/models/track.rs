@@ -2,7 +2,6 @@ use super::*;
 use std::collections::HashMap;
 
 use crate::establish_connection;
-use crate::metadata::vectorize_tags;
 use anyhow::{Error, Result};
 use lofty::{Accessor, FileProperties, ItemKey, Tag};
 use log::trace;
@@ -44,9 +43,9 @@ impl Track {
         let mut conn = establish_connection()?;
         let file_size = fs::metadata(path)?.len();
 
-        let artists = vectorize_tags(tag.get_strings(&ItemKey::TrackArtist));
-        let albumartists = vectorize_tags(tag.get_strings(&ItemKey::AlbumArtist));
-        let genres = vectorize_tags(tag.get_strings(&ItemKey::Genre));
+        let artists: Vec<&str> = tag.get_strings(&ItemKey::TrackArtist).collect();
+        let albumartists: Vec<&str> = tag.get_strings(&ItemKey::AlbumArtist).collect();
+        let genres: Vec<&str> = tag.get_strings(&ItemKey::Genre).collect();
 
         let picture = {
             if tag.picture_count() > 0 {
@@ -101,19 +100,19 @@ impl Track {
             .get_result(&mut conn)?;
 
         for artist in artists {
-            Artist::get_by_title_or_new(&artist)?;
+            Artist::get_by_title_or_new(artist)?;
 
             diesel::insert_into(track_artists::table)
                 .values((
                     track_artists::track_id.eq(track.id),
-                    track_artists::artist_id.eq(Artist::get_by_title(&artist)?.id),
+                    track_artists::artist_id.eq(Artist::get_by_title(artist)?.id),
                 ))
                 .on_conflict_do_nothing()
                 .execute(&mut conn)?;
         }
 
         for genre in genres {
-            let genre = Genre::get_or_new(genre.clone())?;
+            let genre = Genre::get_or_new(genre)?;
 
             diesel::insert_into(track_genres::table)
                 .values((

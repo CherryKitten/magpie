@@ -17,10 +17,10 @@ pub struct Album {
 
 impl Album {
     pub fn new(
-        title: String,
-        albumartists: Vec<String>,
-        year: i32,
-        picture: Option<&Picture>,
+	    title: String,
+	    albumartists: Vec<&str>,
+	    year: i32,
+	    picture: Option<&Picture>,
     ) -> Result<Self> {
         let mut conn = establish_connection()?;
 
@@ -35,12 +35,12 @@ impl Album {
             .unwrap();
 
         for artist in albumartists {
-            Artist::get_by_title_or_new(&artist)?;
+            Artist::get_by_title_or_new(artist)?;
 
             diesel::insert_into(album_artists::table)
                 .values((
                     album_artists::album_id.eq(album.id),
-                    album_artists::artist_id.eq(Artist::get_by_title(&artist)?.id),
+                    album_artists::artist_id.eq(Artist::get_by_title(artist)?.id),
                 ))
                 .on_conflict_do_nothing()
                 .execute(&mut conn)?;

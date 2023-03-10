@@ -1,6 +1,7 @@
 use super::*;
 use crate::establish_connection;
 use anyhow::{Error, Result};
+use duplicate::duplicate;
 use std::collections::HashMap;
 
 #[derive(
@@ -23,21 +24,27 @@ impl Artist {
         Artist::get_by_title(name)
     }
 
-     pub fn get(mut filter: HashMap<String, String>) -> Result<Vec<Self>> {
+    pub fn get(mut filter: HashMap<String, String>) -> Result<Vec<Self>> {
         let mut conn = establish_connection()?;
 
         let mut select = artists::table.select(Artist::as_select()).into_boxed();
 
-        if let Some(title) = filter.remove("title") {
-            select = select.filter(artists::name.like(format!("%{title}%")));
+        if !filter.is_empty() {
+            duplicate! {
+                [
+                    key statement;
+                    [ "title" ] [ artists::name.like(format!("%{item}%")) ];
+                    [ "name" ]  [ artists::name.like(format!("%{item}%")) ];
+                ]
+                if let Some(item) = filter.remove(key) {
+                select = select.filter(statement);
+            }}
         }
 
         select = select.limit(filter.remove("limit").unwrap_or("50".to_string()).parse()?);
-         select = select.offset(filter.remove("offset").unwrap_or("0".to_string()).parse()?);
+        select = select.offset(filter.remove("offset").unwrap_or("0".to_string()).parse()?);
 
-        select = select
-            .distinct()
-            .order_by(artists::name);
+        select = select.distinct().order_by(artists::name);
 
         let result: Vec<Artist> = select.load(&mut conn)?;
         if !result.is_empty() {
@@ -65,7 +72,7 @@ impl Artist {
         let mut conn = establish_connection()?;
         Ok(artists::table
             .select(artists::all_columns)
-            .filter(artists::name.like(title))
+            .filter(artists::name.like(format!("%{title}%")))
             .get_result::<Artist>(&mut conn)?)
     }
 

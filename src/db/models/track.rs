@@ -1,12 +1,15 @@
-use super::*;
 use std::collections::HashMap;
-
-use crate::establish_connection;
-use anyhow::{Error, Result};
-use lofty::{Accessor, FileProperties, ItemKey, Tag};
-use log::trace;
 use std::fs;
 use std::path::Path;
+
+use anyhow::{Error, Result};
+use duplicate::duplicate;
+use lofty::{Accessor, FileProperties, ItemKey, Tag};
+use log::trace;
+
+use crate::establish_connection;
+
+use super::*;
 
 #[derive(
     Debug, Default, PartialEq, Eq, Selectable, Queryable, QueryableByName, Insertable, Identifiable,
@@ -143,17 +146,36 @@ impl Track {
 
         let mut select = tracks::table.select(Track::as_select()).into_boxed();
 
-        if let Some(title) = filter.remove("title") {
-            select = select.filter(tracks::title.like(format!("%{title}%")));
+        if !filter.is_empty() {
+            duplicate! {
+                [
+                    key statement;
+                    [ "title" ]         [ tracks::title.like(format!("%{item}%")) ];
+                    [ "subtitle" ]      [ tracks::subtitle.like(format!("%{item}%")) ];
+                    [ "album" ]         [ tracks::album_id.eq(Album::get_by_title(&item)?.id) ];
+                    [ "year" ]          [ tracks::year.eq((item.parse::<i32>()?)) ];
+                    [ "bpm" ]           [ tracks::bpm.eq(item) ];
+                    [ "language" ]      [ tracks::language.eq(item) ];
+                ]
+                if let Some(item) = filter.remove(key) {
+                select = select.filter(statement);
+            }}
         }
 
-        if let Some(album) = filter.remove("album") {
-            let album = Album::get_by_title(&album)?;
-            select = select.filter(tracks::album_id.eq(album.id));
-        }
-
-        select = select.limit(filter.remove("limit").unwrap_or("50".to_string()).parse()?);
-        select = select.offset(filter.remove("offset").unwrap_or("0".to_string()).parse()?);
+        select = select.limit(
+            filter
+                .remove("limit")
+                .unwrap_or("50".to_string())
+                .parse()
+                .unwrap(),
+        );
+        select = select.offset(
+            filter
+                .remove("offset")
+                .unwrap_or("0".to_string())
+                .parse()
+                .unwrap(),
+        );
 
         select = select
             .distinct()

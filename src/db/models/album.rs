@@ -1,6 +1,7 @@
 use super::*;
 use crate::establish_connection;
 use anyhow::{Error, Result};
+use duplicate::duplicate;
 use lofty::Picture;
 use std::collections::HashMap;
 
@@ -17,10 +18,10 @@ pub struct Album {
 
 impl Album {
     pub fn new(
-	    title: String,
-	    albumartists: Vec<&str>,
-	    year: i32,
-	    picture: Option<&Picture>,
+        title: String,
+        albumartists: Vec<&str>,
+        year: i32,
+        picture: Option<&Picture>,
     ) -> Result<Self> {
         let mut conn = establish_connection()?;
 
@@ -54,8 +55,16 @@ impl Album {
 
         let mut select = albums::table.select(Album::as_select()).into_boxed();
 
-        if let Some(title) = filter.remove("title") {
-            select = select.filter(albums::title.like(format!("%{title}%")));
+        if !filter.is_empty() {
+            duplicate! {
+                [
+                    key statement;
+                    [ "title" ] [ albums::title.like(format!("%{item}%")) ];
+                    [ "year" ]  [ albums::year.eq((item.parse::<i32>()?)) ];
+                ]
+                if let Some(item) = filter.remove(key) {
+                select = select.filter(statement);
+            }}
         }
 
         select = select.limit(filter.remove("limit").unwrap_or("50".to_string()).parse()?);
@@ -93,7 +102,7 @@ impl Album {
 
         Ok(albums::table
             .select(albums::all_columns)
-            .filter(albums::title.like(title))
+            .filter(albums::title.like(format!("%{title}%")))
             .get_result::<Album>(&mut conn)?)
     }
 

@@ -34,42 +34,37 @@ async fn get_index() -> impl Responder {
 
 #[get("/tracks")]
 pub async fn get_tracks(filter: web::Query<HashMap<String, String>>) -> HttpResponse {
-    if let Ok(tracks) = crate::db::Track::get(filter.into_inner()) {
-        let mut metadata: Vec<MetaDataContainer> = vec![];
-        for a in tracks {
-            metadata.push(MetaDataContainer::from(a));
+    match crate::db::Track::get(filter.into_inner()) {
+        Ok(tracks) => {
+            let mut metadata: Vec<MetaDataContainer> = vec![];
+            for a in tracks {
+                metadata.push(MetaDataContainer::from(a));
+            }
+            HttpResponse::Ok().json(ResponseContainer::new(metadata))
         }
-        HttpResponse::Ok().json(ResponseContainer::new(metadata))
-    } else {
-        HttpResponse::NotFound().finish()
+        Err(error) => HttpResponse::NotFound().json(error.to_string()),
     }
 }
 
 #[get("/tracks/{id}")]
 pub async fn get_track(id: web::Path<i32>) -> HttpResponse {
-    if let Ok(track) = crate::db::Track::get_by_id(*id) {
-        let metadata: Vec<MetaDataContainer> = vec![MetaDataContainer::from(track)];
-        HttpResponse::Ok().json(ResponseContainer::new(metadata))
-    } else {
-        HttpResponse::NotFound().finish()
+    match crate::db::Track::get_by_id(*id) {
+        Ok(track) => {
+            let metadata: Vec<MetaDataContainer> = vec![MetaDataContainer::from(track)];
+            HttpResponse::Ok().json(ResponseContainer::new(metadata))
+        }
+        Err(error) => HttpResponse::NotFound().json(error.to_string()),
     }
 }
 
 #[get("/tracks/{id}/play")]
 pub async fn play_track(id: web::Path<i32>) -> Either<HttpResponse, NamedFile> {
-    if let Ok(track) = crate::db::Track::get_by_id(*id) {
-        if let Some(path) = track.path {
-            let file = NamedFile::open_async(path).await;
-            if let Ok(file) = file {
-                Either::Right(file)
-            } else {
-                Either::Left(HttpResponse::InternalServerError().body("Error getting file."))
-            }
-        } else {
-            Either::Left(HttpResponse::InternalServerError().body("Error getting file."))
-        }
-    } else {
-        Either::Left(HttpResponse::NotFound().finish())
+    match crate::db::Track::get_by_id(*id) {
+        Ok(track) => match NamedFile::open_async(track.path.unwrap()).await {
+            Ok(file) => Either::Right(file),
+            Err(error) => Either::Left(HttpResponse::NotFound().json(error.to_string())),
+        },
+        Err(error) => Either::Left(HttpResponse::NotFound().json(error.to_string())),
     }
 }
 

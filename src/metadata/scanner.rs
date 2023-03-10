@@ -1,6 +1,6 @@
 use crate::db::models::Track;
 use anyhow::Result;
-use lofty::{read_from_path, Accessor, Tag, TaggedFileExt, AudioFile, FileProperties};
+use lofty::{read_from_path, Accessor, AudioFile, FileProperties, Tag, TaggedFileExt};
 use log::{info, trace};
 use std::fs;
 use std::path::Path;

@@ -12,7 +12,7 @@ pub async fn run() -> Result<()> {
     let config = super::settings::get_config()?;
     let dev = config.get_bool("dev")?;
 
-    let server = HttpServer::new(move|| {
+    let server = HttpServer::new(move || {
         let mut cors = Cors::default();
         if dev {
             cors = cors.allow_any_origin();

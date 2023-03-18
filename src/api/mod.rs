@@ -1,6 +1,7 @@
+use crate::db::DbPool;
 use actix_cors::Cors;
 use actix_web::middleware::Logger;
-use actix_web::{App, HttpServer};
+use actix_web::{web, App, HttpServer};
 use anyhow::Result;
 use log::info;
 use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
@@ -8,7 +9,7 @@ use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
 pub mod response_container;
 pub mod routes;
 
-pub async fn run() -> Result<()> {
+pub async fn run(pool: DbPool) -> Result<()> {
     let config = super::settings::get_config()?;
     let dev = config.get_bool("dev")?;
 
@@ -19,6 +20,7 @@ pub async fn run() -> Result<()> {
         };
 
         App::new()
+            .app_data(web::Data::new(pool.clone()))
             .configure(routes::config)
             .wrap(Logger::default())
             .wrap(cors)

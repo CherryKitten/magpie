@@ -134,8 +134,8 @@ impl From<Artist> for MetaDataContainer {
 }
 impl From<Track> for MetaDataContainer {
     fn from(v: Track) -> Self {
-        let album = v.get_album();
-        let artist = v.get_artist();
+        let album = v.get_album(&mut crate::db::establish_connection().unwrap());
+        let artist = v.get_artist(&mut crate::db::establish_connection().unwrap());
 
         MetaDataContainer {
             kind: ContentType::Track,
@@ -173,8 +173,8 @@ impl From<Track> for MetaDataContainer {
 
 impl From<Album> for MetaDataContainer {
     fn from(v: Album) -> Self {
-        let artist = v.get_artist();
-        let tracks = v.get_tracks();
+        let artist = v.get_artist(&mut crate::db::establish_connection().unwrap());
+        let tracks = v.get_tracks(&mut crate::db::establish_connection().unwrap());
         MetaDataContainer {
             kind: ContentType::Album,
             id: v.id,

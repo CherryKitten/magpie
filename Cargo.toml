@@ -12,7 +12,7 @@ actix-web = { version = "4.3.1", features = ["openssl"] }
 actix-files = "0.6.2"
 lofty = "0.11.0"
 serde = { version = "1.0.152", features = ["derive"] }
-diesel = { version = "2.0.3", features = ["sqlite", "returning_clauses_for_sqlite_3_35"] }
+diesel = { version = "2.0.3", features = ["sqlite", "returning_clauses_for_sqlite_3_35", "r2d2"] }
 env_logger = "0.10.0"
 log = "0.4.17"
 anyhow = "1.0.69"

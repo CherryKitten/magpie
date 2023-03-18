@@ -1,5 +1,5 @@
 use super::*;
-use crate::establish_connection;
+
 use anyhow::{Error, Result};
 use duplicate::duplicate;
 use std::collections::HashMap;
@@ -14,19 +14,18 @@ pub struct Artist {
 }
 
 impl Artist {
-    pub fn new(name: &str) -> Result<Self> {
-        let mut conn = establish_connection()?;
-
+    pub fn new(name: &str, conn: &mut SqliteConnection) -> Result<Self> {
         diesel::insert_into(artists::table)
             .values(artists::name.eq(name))
-            .execute(&mut conn)?;
+            .execute(conn)?;
 
-        Artist::get_by_title(name)
+        Artist::get_by_title(name, conn)
     }
 
-    pub fn get(mut filter: HashMap<String, String>) -> Result<Vec<Self>> {
-        let mut conn = establish_connection()?;
-
+    pub fn get(
+        mut filter: HashMap<String, String>,
+        conn: &mut SqliteConnection,
+    ) -> Result<Vec<Self>> {
         let mut select = artists::table.select(Artist::as_select()).into_boxed();
 
         if !filter.is_empty() {
@@ -46,7 +45,7 @@ impl Artist {
 
         select = select.distinct().order_by(artists::name);
 
-        let result: Vec<Artist> = select.load(&mut conn)?;
+        let result: Vec<Artist> = select.load(conn)?;
         if !result.is_empty() {
             Ok(result)
         } else {
@@ -54,33 +53,28 @@ impl Artist {
         }
     }
 
-    pub fn all() -> Result<Vec<Self>> {
-        let mut conn = establish_connection()?;
-
+    pub fn all(conn: &mut SqliteConnection) -> Result<Vec<Self>> {
         Ok(artists::table
             .select(artists::all_columns)
-            .get_results(&mut conn)?)
+            .get_results(conn)?)
     }
 
-    pub fn get_by_id(id: i32) -> Result<Self> {
-        let mut conn = establish_connection()?;
-
-        Ok(artists::table.find(id).first(&mut conn)?)
+    pub fn get_by_id(id: i32, conn: &mut SqliteConnection) -> Result<Self> {
+        Ok(artists::table.find(id).first(conn)?)
     }
 
-    pub fn get_by_title(title: &str) -> Result<Self> {
-        let mut conn = establish_connection()?;
+    pub fn get_by_title(title: &str, conn: &mut SqliteConnection) -> Result<Self> {
         Ok(artists::table
             .select(artists::all_columns)
             .filter(artists::name.like(format!("%{title}%")))
-            .get_result::<Artist>(&mut conn)?)
+            .get_result::<Artist>(conn)?)
     }
 
-    pub fn get_by_title_or_new(title: &str) -> Result<Self> {
-        let artist = Artist::get_by_title(title);
+    pub fn get_by_title_or_new(title: &str, conn: &mut SqliteConnection) -> Result<Self> {
+        let artist = Artist::get_by_title(title, conn);
         match artist {
             Ok(artist) => Ok(artist),
-            Err(_) => Artist::new(title),
+            Err(_) => Artist::new(title, conn),
         }
     }
 

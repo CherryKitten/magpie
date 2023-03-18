@@ -1,24 +1,29 @@
 use crate::db::models::Track;
+use crate::db::DbPool;
 use anyhow::Result;
 use lofty::{read_from_path, Accessor, AudioFile, FileProperties, Tag, TaggedFileExt};
-use log::{info, trace};
+use log::{error, info, trace};
 use std::fs;
 use std::path::Path;
 
-pub fn scan(dir: &Path) -> Result<()> {
+pub fn scan(dir: &Path, pool: DbPool) -> Result<()> {
     info!("Scanning directory {:?}", dir);
 
     for entry in fs::read_dir(dir)? {
         let path = entry?.path();
+        let mut conn = pool.get()?;
 
         if path.is_dir() {
-            scan(&path)?;
+            if let Err(e) = scan(&path, pool.clone()) {
+                error!("{e}");
+                continue;
+            }
         } else {
             match read_file(&path)? {
                 FileType::Music(tag) => {
                     info!("Found track {:?}", tag.0.title());
-                    if !Track::check(&path) {
-                        Track::new(tag, &path)?;
+                    if !Track::check(&path, &mut conn) {
+                        Track::new(tag, &path, &mut conn)?;
                     };
                     continue;
                 }
@@ -51,7 +56,13 @@ fn read_file(path: &Path) -> Result<FileType> {
         .to_str()
         .unwrap_or_default()
     {
-        "flac" | "mp3" | "opus" => FileType::Music(read_tags(path)?),
+        "flac" | "mp3" | "opus" => {
+            if let Ok(file) = read_tags(path) {
+                FileType::Music(file)
+            } else {
+                FileType::Unsupported
+            }
+        }
         "png" | "jpg" | "jpeg" | "webp" => FileType::Image,
         _ => FileType::Unsupported,
     };

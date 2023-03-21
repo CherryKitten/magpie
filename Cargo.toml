@@ -7,16 +7,16 @@ edition = "2021"
 
 [dependencies]
 config = "0.13.3"
-openssl = "0.10.45"
-actix-web = { version = "4.3.1", features = ["openssl"] }
-actix-files = "0.6.2"
 lofty = "0.11.0"
 serde = { version = "1.0.152", features = ["derive"] }
 diesel = { version = "2.0.3", features = ["sqlite", "returning_clauses_for_sqlite_3_35", "r2d2"] }
-env_logger = "0.10.0"
 log = "0.4.17"
 anyhow = "1.0.69"
 serde_with = "2.2.0"
-actix-cors = "0.6.4"
 duplicate = "1.0.0"
+axum = "0.6.10"
+tokio = { version = "1.26.0", features = ["full"] }
+tokio-util = { version = "0.7.7", features = ["io"] }
+tower-http = { version = "0.4.0", features = ["trace"] }
+tracing-subscriber = "0.3.16"
 

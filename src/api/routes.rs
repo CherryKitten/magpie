@@ -1,29 +1,34 @@
 use crate::api::response_container::{MetaDataContainer, ResponseContainer};
 use crate::db;
-use crate::db::DbPool;
-use actix_files::NamedFile;
-use actix_web::web::Json;
-use actix_web::{get, web, Either, HttpResponse, Responder};
-use anyhow::Error;
-use std::collections::HashMap;
 
-pub fn config(cfg: &mut web::ServiceConfig) {
-    cfg.service(
-        web::scope("/api")
-            .service(get_index)
-            .service(get_tracks)
-            .service(get_track)
-            .service(play_track)
-            .service(get_artists)
-            .service(get_artist)
-            .service(get_albums)
-            .service(get_album)
-            .service(get_album_art),
-    );
+use crate::api::AppState;
+use anyhow::Error;
+use axum::{
+    body::StreamBody,
+    extract::{Path, Query, State},
+    http::StatusCode,
+    response::{IntoResponse, Response},
+    routing::get,
+    Json, Router,
+};
+use std::collections::HashMap;
+use tokio::task::spawn_blocking;
+use tokio_util::io::ReaderStream;
+
+pub fn api_routes() -> Router<AppState> {
+    Router::new()
+        .route("/", get(get_index))
+        .route("/tracks", get(get_tracks))
+        .route("/tracks/:id", get(get_track))
+        .route("/tracks/:id/play", get(play_track))
+        .route("/artists", get(get_artists))
+        .route("/artists/:id", get(get_artist))
+        .route("/albums", get(get_albums))
+        .route("/albums/:id", get(get_album))
+        .route("/albums/:id/art", get(get_album_art))
 }
 
-#[get("/")]
-async fn get_index() -> impl Responder {
+async fn get_index() -> Response {
     let mut map = HashMap::new();
 
     map.insert(
@@ -32,76 +37,75 @@ async fn get_index() -> impl Responder {
     );
     map.insert("Version", "0.2.0");
 
-    Json(map)
+    Json(map).into_response()
 }
 
-#[get("/tracks")]
 pub async fn get_tracks(
-    filter: web::Query<HashMap<String, String>>,
-    pool: web::Data<DbPool>,
-) -> HttpResponse {
+    Query(filter): Query<HashMap<String, String>>,
+    State(state): State<AppState>,
+) -> Response {
+    let pool = state.pool;
     let mut conn = pool.get().expect("Failed to get database connection");
 
-    let result = web::block(move || crate::db::Track::get(filter.into_inner(), &mut conn))
-        .await
-        .unwrap_or(Err(Error::msg("Failed to get Tracks")));
+    let result = db::Track::get(filter, &mut conn);
     match result {
         Ok(tracks) => {
             let mut metadata: Vec<MetaDataContainer> = vec![];
             for a in tracks {
                 metadata.push(MetaDataContainer::from(a));
             }
-            HttpResponse::Ok().json(ResponseContainer::new(metadata))
+            Json(ResponseContainer::new(metadata)).into_response()
         }
-        Err(error) => HttpResponse::NotFound().json(error.to_string()),
+        Err(error) => (StatusCode::NOT_FOUND, error.to_string()).into_response(),
     }
 }
 
-#[get("/tracks/{id}")]
-pub async fn get_track(id: web::Path<i32>, pool: web::Data<DbPool>) -> HttpResponse {
+pub async fn get_track(Path(id): Path<i32>, State(state): State<AppState>) -> Response {
+    let pool = state.pool;
     let mut conn = pool.get().expect("Failed to get database connection");
 
-    let result = web::block(move || crate::db::Track::get_by_id(*id, &mut conn))
+    let result = spawn_blocking(move || db::Track::get_by_id(id, &mut conn))
         .await
         .unwrap_or(Err(Error::msg("Failed to get Tracks")));
 
     match result {
         Ok(track) => {
             let metadata: Vec<MetaDataContainer> = vec![MetaDataContainer::from(track)];
-            HttpResponse::Ok().json(ResponseContainer::new(metadata))
+            Json(ResponseContainer::new(metadata)).into_response()
         }
-        Err(error) => HttpResponse::NotFound().json(error.to_string()),
+        Err(error) => (StatusCode::NOT_FOUND, error.to_string()).into_response(),
     }
 }
 
-#[get("/tracks/{id}/play")]
-pub async fn play_track(
-    id: web::Path<i32>,
-    pool: web::Data<DbPool>,
-) -> Either<HttpResponse, NamedFile> {
+pub async fn play_track(Path(id): Path<i32>, State(state): State<AppState>) -> Response {
+    let pool = state.pool;
     let mut conn = pool.get().expect("Failed to get database connection");
 
-    let result = web::block(move || db::Track::get_by_id(*id, &mut conn))
+    let result = spawn_blocking(move || db::Track::get_by_id(id, &mut conn))
         .await
         .unwrap_or(Err(Error::msg("Failed to get Tracks")));
 
     match result {
-        Ok(track) => match NamedFile::open_async(track.path.unwrap()).await {
-            Ok(file) => Either::Right(file),
-            Err(error) => Either::Left(HttpResponse::NotFound().json(error.to_string())),
+        Ok(track) => match tokio::fs::File::open(track.path.unwrap()).await {
+            Ok(file) => {
+                let stream = ReaderStream::new(file);
+                let body = StreamBody::new(stream);
+                body.into_response()
+            }
+            Err(error) => (StatusCode::NOT_FOUND, error.to_string()).into_response(),
         },
-        Err(error) => Either::Left(HttpResponse::NotFound().json(error.to_string())),
+        Err(error) => (StatusCode::NOT_FOUND, error.to_string()).into_response(),
     }
 }
 
-#[get("/artists")]
 pub async fn get_artists(
-    filter: web::Query<HashMap<String, String>>,
-    pool: web::Data<DbPool>,
-) -> HttpResponse {
+    Query(filter): Query<HashMap<String, String>>,
+    State(state): State<AppState>,
+) -> Response {
+    let pool = state.pool;
     let mut conn = pool.get().expect("Failed to get database connection");
 
-    let result = web::block(move || crate::db::Artist::get(filter.into_inner(), &mut conn))
+    let result = spawn_blocking(move || db::Artist::get(filter, &mut conn))
         .await
         .unwrap_or(Err(Error::msg("Failed to get Artists")));
 
@@ -110,36 +114,36 @@ pub async fn get_artists(
         for a in artist {
             metadata.push(MetaDataContainer::from(a));
         }
-        HttpResponse::Ok().json(ResponseContainer::new(metadata))
+        Json(ResponseContainer::new(metadata)).into_response()
     } else {
-        HttpResponse::NotFound().finish()
+        StatusCode::NOT_FOUND.into_response()
     }
 }
 
-#[get("/artists/{id}")]
-pub async fn get_artist(id: web::Path<i32>, pool: web::Data<DbPool>) -> HttpResponse {
+pub async fn get_artist(Path(id): Path<i32>, State(state): State<AppState>) -> Response {
+    let pool = state.pool;
     let mut conn = pool.get().expect("Failed to get database connection");
 
-    let result = web::block(move || crate::db::Artist::get_by_id(*id, &mut conn))
+    let result = spawn_blocking(move || db::Artist::get_by_id(id, &mut conn))
         .await
         .unwrap_or(Err(Error::msg("Failed to get Artists")));
 
     if let Ok(artist) = result {
         let metadata: Vec<MetaDataContainer> = vec![MetaDataContainer::from(artist)];
-        HttpResponse::Ok().json(ResponseContainer::new(metadata))
+        Json(ResponseContainer::new(metadata)).into_response()
     } else {
-        HttpResponse::NotFound().finish()
+        StatusCode::NOT_FOUND.into_response()
     }
 }
 
-#[get("/albums")]
 pub async fn get_albums(
-    filter: web::Query<HashMap<String, String>>,
-    pool: web::Data<DbPool>,
-) -> HttpResponse {
+    Query(filter): Query<HashMap<String, String>>,
+    State(state): State<AppState>,
+) -> Response {
+    let pool = state.pool;
     let mut conn = pool.get().expect("Failed to get database connection");
 
-    let result = web::block(move || crate::db::Album::get(filter.into_inner(), &mut conn))
+    let result = spawn_blocking(move || db::Album::get(filter, &mut conn))
         .await
         .unwrap_or(Err(Error::msg("Failed to get Albums")));
 
@@ -148,47 +152,43 @@ pub async fn get_albums(
         for a in albums {
             metadata.push(MetaDataContainer::from(a));
         }
-        HttpResponse::Ok().json(ResponseContainer::new(metadata))
+        Json(ResponseContainer::new(metadata)).into_response()
     } else {
-        HttpResponse::NotFound().finish()
+        StatusCode::NOT_FOUND.into_response()
     }
 }
 
-#[get("/albums/{id}")]
-pub async fn get_album(id: web::Path<i32>, pool: web::Data<DbPool>) -> HttpResponse {
+pub async fn get_album(Path(id): Path<i32>, State(state): State<AppState>) -> Response {
+    let pool = state.pool;
     let mut conn = pool.get().expect("Failed to get database connection");
 
-    let result = web::block(move || crate::db::Album::get_by_id(*id, &mut conn))
+    let result = spawn_blocking(move || db::Album::get_by_id(id, &mut conn))
         .await
         .unwrap_or(Err(Error::msg("Failed to get Albums")));
 
     if let Ok(album) = result {
         let metadata: Vec<MetaDataContainer> = vec![MetaDataContainer::from(album)];
-        HttpResponse::Ok().json(ResponseContainer::new(metadata))
+        Json(ResponseContainer::new(metadata)).into_response()
     } else {
-        HttpResponse::NotFound().finish()
+        StatusCode::NOT_FOUND.into_response()
     }
 }
 
-#[get("/albums/{id}/art")]
-pub async fn get_album_art(id: web::Path<i32>, pool: web::Data<DbPool>) -> HttpResponse {
+pub async fn get_album_art(Path(id): Path<i32>, State(state): State<AppState>) -> Response {
+    let pool = state.pool;
     let mut conn = pool.get().expect("Failed to get database connection");
 
-    let result = web::block(move || crate::db::Album::get_by_id(*id, &mut conn))
+    let result = spawn_blocking(move || db::Album::get_by_id(id, &mut conn))
         .await
         .unwrap_or(Err(Error::msg("Failed to get Albums")));
 
     if let Ok(album) = result {
         if let Some(art) = album.art {
-            HttpResponse::Ok().body(art)
+            art.into_response()
         } else {
-            HttpResponse::NotFound().finish()
+            StatusCode::NOT_FOUND.into_response()
         }
     } else {
-        HttpResponse::NotFound().finish()
+        StatusCode::NOT_FOUND.into_response()
     }
-}
-
-pub async fn get_library() -> HttpResponse {
-    HttpResponse::Ok().json("todo")
 }

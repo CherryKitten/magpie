@@ -1,9 +1,9 @@
 use crate::db::DbPool;
-use actix_web::rt::time;
 use anyhow::Result;
-use log::info;
+use log::{error, info};
 use std::path::Path;
 use std::time::Duration;
+use tokio::time;
 
 pub async fn run_schedule(pool: DbPool) -> Result<()> {
     let mut interval = time::interval(Duration::from_secs(60 * 60));
@@ -13,7 +13,12 @@ pub async fn run_schedule(pool: DbPool) -> Result<()> {
     loop {
         interval.tick().await;
         info!("Starting metadata scan");
-        crate::metadata::scanner::scan(path, pool.clone())?;
+        match crate::metadata::scanner::scan(path, pool.clone()) {
+            Ok(_) => {}
+            Err(error) => {
+                error!("{error}")
+            }
+        }
         info!("Finished metadata scan");
     }
 }

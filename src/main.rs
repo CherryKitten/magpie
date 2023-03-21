@@ -4,15 +4,15 @@ pub mod db;
 pub mod metadata;
 pub mod scheduler;
 pub use crate::db::establish_connection;
-use actix_web::rt::spawn;
 pub mod settings;
 use crate::db::create_connection_pool;
-use log::info;
+use log::{error, info};
 use std::collections::HashMap;
+use tokio::{spawn, try_join};
 
-#[actix_web::main]
+#[tokio::main]
 async fn main() -> Result<()> {
-    env_logger::init();
+    tracing_subscriber::fmt::init();
 
     let config = settings::get_config()?;
     let pool = create_connection_pool()?;
@@ -24,12 +24,20 @@ async fn main() -> Result<()> {
             .try_deserialize::<HashMap<String, String>>()?
     );
 
-    let scheduler = spawn(scheduler::run_schedule(pool.clone()));
-
     let api = spawn(api::run(pool.clone()));
+    let scheduler = spawn(scheduler::run_schedule(pool));
 
-    scheduler.await?.unwrap();
-    api.await?.unwrap();
+    let (api, scheduler) = try_join!(api, scheduler)?;
+
+    if let Err(error) = api {
+        error!("{error}");
+        std::process::exit(1);
+    }
+
+    if let Err(error) = scheduler {
+        error!("{error}");
+        std::process::exit(1);
+    }
 
     Ok(())
 }

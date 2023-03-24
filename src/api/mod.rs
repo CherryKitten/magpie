@@ -1,17 +1,17 @@
+use crate::api::response_container::ResponseContainer;
 use crate::db::DbPool;
 use anyhow::{Context, Result};
+use axum::http::Method;
 use axum::routing::get;
 use axum::{Json, Router};
 use log::info;
+use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
-use axum::http::Method;
 use tower_http::trace::TraceLayer;
-use crate::api::response_container::ResponseContainer;
-use serde::{Serialize, Deserialize};
 
+pub mod magpie;
 pub mod response_container;
 pub mod subsonic;
-pub mod magpie;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -19,10 +19,10 @@ pub struct AppState {
 }
 
 #[derive(Eq, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all="kebab-case")]
+#[serde(rename_all = "kebab-case")]
 pub enum Response {
     MagpieResponse(ResponseContainer),
-    SubsonicResponse(subsonic::SubsonicResponse)
+    SubsonicResponse(subsonic::SubsonicResponse),
 }
 
 pub async fn run(pool: DbPool) -> Result<()> {

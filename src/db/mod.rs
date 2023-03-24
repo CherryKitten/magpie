@@ -7,9 +7,7 @@ use diesel::r2d2::{ConnectionManager, Pool};
 
 pub type DbPool = Pool<ConnectionManager<SqliteConnection>>;
 
-pub mod models;
 pub mod schema;
-pub use models::*;
 
 pub fn establish_connection() -> Result<SqliteConnection> {
     let config = get_config()?;

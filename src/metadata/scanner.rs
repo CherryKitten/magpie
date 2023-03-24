@@ -1,5 +1,5 @@
-use crate::db::models::Track;
 use crate::db::DbPool;
+use crate::metadata::models::Track;
 use anyhow::Result;
 use lofty::{read_from_path, Accessor, AudioFile, FileProperties, Tag, TaggedFileExt};
 use log::{error, info, trace};

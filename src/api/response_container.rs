@@ -1,4 +1,4 @@
-use crate::db::{Album, Artist, Track};
+use crate::metadata::{Album, Artist, Track};
 use serde::{
     ser::{Serialize as SerializeT, SerializeMap},
     Deserialize, Serialize, Serializer,

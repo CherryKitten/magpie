@@ -1,4 +1,4 @@
-use super::schema::*;
+use crate::db::schema::*;
 use anyhow::Result;
 pub mod album;
 pub mod artist;

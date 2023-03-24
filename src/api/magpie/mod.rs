@@ -1,5 +1,5 @@
 use crate::api::response_container::{MetaDataContainer, ResponseContainer};
-use crate::db;
+use crate::metadata::*;
 
 use crate::api::AppState;
 use anyhow::Error;
@@ -47,7 +47,7 @@ pub async fn get_tracks(
     let pool = state.pool;
     let mut conn = pool.get().expect("Failed to get database connection");
 
-    let result = db::Track::get(filter, &mut conn);
+    let result = Track::get(filter, &mut conn);
     match result {
         Ok(tracks) => {
             let mut metadata: Vec<MetaDataContainer> = vec![];
@@ -64,7 +64,7 @@ pub async fn get_track(Path(id): Path<i32>, State(state): State<AppState>) -> Re
     let pool = state.pool;
     let mut conn = pool.get().expect("Failed to get database connection");
 
-    let result = spawn_blocking(move || db::Track::get_by_id(id, &mut conn))
+    let result = spawn_blocking(move || Track::get_by_id(id, &mut conn))
         .await
         .unwrap_or(Err(Error::msg("Failed to get Tracks")));
 
@@ -81,7 +81,7 @@ pub async fn play_track(Path(id): Path<i32>, State(state): State<AppState>) -> R
     let pool = state.pool;
     let mut conn = pool.get().expect("Failed to get database connection");
 
-    let result = spawn_blocking(move || db::Track::get_by_id(id, &mut conn))
+    let result = spawn_blocking(move || Track::get_by_id(id, &mut conn))
         .await
         .unwrap_or(Err(Error::msg("Failed to get Tracks")));
 
@@ -105,7 +105,7 @@ pub async fn get_artists(
     let pool = state.pool;
     let mut conn = pool.get().expect("Failed to get database connection");
 
-    let result = spawn_blocking(move || db::Artist::get(filter, &mut conn))
+    let result = spawn_blocking(move || Artist::get(filter, &mut conn))
         .await
         .unwrap_or(Err(Error::msg("Failed to get Artists")));
 
@@ -124,7 +124,7 @@ pub async fn get_artist(Path(id): Path<i32>, State(state): State<AppState>) -> R
     let pool = state.pool;
     let mut conn = pool.get().expect("Failed to get database connection");
 
-    let result = spawn_blocking(move || db::Artist::get_by_id(id, &mut conn))
+    let result = spawn_blocking(move || Artist::get_by_id(id, &mut conn))
         .await
         .unwrap_or(Err(Error::msg("Failed to get Artists")));
 
@@ -143,7 +143,7 @@ pub async fn get_albums(
     let pool = state.pool;
     let mut conn = pool.get().expect("Failed to get database connection");
 
-    let result = spawn_blocking(move || db::Album::get(filter, &mut conn))
+    let result = spawn_blocking(move || Album::get(filter, &mut conn))
         .await
         .unwrap_or(Err(Error::msg("Failed to get Albums")));
 
@@ -162,7 +162,7 @@ pub async fn get_album(Path(id): Path<i32>, State(state): State<AppState>) -> Re
     let pool = state.pool;
     let mut conn = pool.get().expect("Failed to get database connection");
 
-    let result = spawn_blocking(move || db::Album::get_by_id(id, &mut conn))
+    let result = spawn_blocking(move || Album::get_by_id(id, &mut conn))
         .await
         .unwrap_or(Err(Error::msg("Failed to get Albums")));
 
@@ -178,7 +178,7 @@ pub async fn get_album_art(Path(id): Path<i32>, State(state): State<AppState>) -
     let pool = state.pool;
     let mut conn = pool.get().expect("Failed to get database connection");
 
-    let result = spawn_blocking(move || db::Album::get_by_id(id, &mut conn))
+    let result = spawn_blocking(move || Album::get_by_id(id, &mut conn))
         .await
         .unwrap_or(Err(Error::msg("Failed to get Albums")));
 

@@ -108,15 +108,14 @@ async fn unimplemented() -> Json<Response> {
 
 #[skip_serializing_none]
 #[derive(Eq, PartialEq, Serialize, Deserialize, Default)]
-#[serde(rename_all="camelCase")]
+#[serde(rename_all = "camelCase")]
 pub struct SubsonicResponse {
     magpie_version: String,
     license: Option<SubsonicLicense>,
     status: SubsonicStatus,
-    #[serde(rename="type")]
+    #[serde(rename = "type")]
     subsonic_type: String,
     version: String,
-
 }
 
 impl SubsonicResponse {
@@ -131,9 +130,8 @@ impl SubsonicResponse {
     }
 }
 
-
 #[derive(Eq, PartialEq, Serialize, Deserialize, Default)]
-#[serde(rename_all="lowercase")]
+#[serde(rename_all = "lowercase")]
 enum SubsonicStatus {
     #[default]
     Ok,
@@ -142,7 +140,7 @@ enum SubsonicStatus {
 }
 
 #[derive(Eq, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all="lowercase")]
+#[serde(rename_all = "lowercase")]
 struct SubsonicLicense {
     valid: String,
     email: String,
@@ -153,13 +151,13 @@ impl Default for SubsonicLicense {
     fn default() -> Self {
         let expiry = match chrono::Utc::now().checked_add_months(chrono::Months::new(12)) {
             None => chrono::Utc::now(),
-            Some(x) => x
+            Some(x) => x,
         };
 
         SubsonicLicense {
             valid: String::from("true"),
             email: String::from("alwaysvalid@example.com"),
-            license_expires: expiry.to_rfc3339_opts(chrono::SecondsFormat::Millis, true)
+            license_expires: expiry.to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
         }
     }
 }

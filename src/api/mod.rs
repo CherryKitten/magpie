@@ -4,6 +4,7 @@ use axum::routing::get;
 use axum::{Json, Router};
 use log::info;
 use std::net::SocketAddr;
+use axum::http::Method;
 use tower_http::trace::TraceLayer;
 use crate::api::response_container::ResponseContainer;
 use serde::{Serialize, Deserialize};
@@ -29,6 +30,10 @@ pub async fn run(pool: DbPool) -> Result<()> {
     let _dev = config.get_bool("dev")?;
     let state = AppState { pool };
 
+    let cors = tower_http::cors::CorsLayer::new()
+        .allow_methods([Method::GET, Method::POST])
+        .allow_origin(tower_http::cors::Any);
+
     let api = magpie::api_routes();
     let subsonic = subsonic::subsonic_compat_routes();
     let app = Router::new()
@@ -36,6 +41,7 @@ pub async fn run(pool: DbPool) -> Result<()> {
         .nest("/rest", subsonic)
         .route("/", get(|| async { Json("Hello World") }))
         .with_state(state)
+        .layer(cors)
         .layer(TraceLayer::new_for_http());
 
     let (mut host, port) = (config.get_string("host")?, config.get_int("port")? as u16);

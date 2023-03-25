@@ -12,7 +12,7 @@ use std::collections::HashMap;
 pub struct Album {
     pub id: i32,
     pub year: Option<i32>,
-    pub title: Option<String>,
+    pub title: String,
     pub art: Option<Vec<u8>>,
 }
 
@@ -85,7 +85,7 @@ impl Album {
 
     pub fn all(conn: &mut SqliteConnection) -> Result<Vec<Self>> {
         Ok(albums::table
-            .select(albums::all_columns)
+            .select(Album::as_select())
             .get_results(conn)?)
     }
 
@@ -95,17 +95,17 @@ impl Album {
 
     pub fn get_by_title(title: &str, conn: &mut SqliteConnection) -> Result<Self> {
         Ok(albums::table
-            .select(albums::all_columns)
+            .select(Album::as_select())
             .filter(albums::title.like(format!("%{title}%")))
             .get_result::<Album>(conn)?)
     }
 
     pub fn get_by_artist_id(id: i32, conn: &mut SqliteConnection) -> Result<Vec<Self>> {
-        let artist: Artist = artists::table.find(id).first(conn)?;
+        let artist = Artist::get_by_id(id, conn)?;
 
         Ok(AlbumArtist::belonging_to(&artist)
             .inner_join(albums::table)
-            .select(albums::all_columns)
+            .select(Album::as_select())
             .get_results(conn)?)
     }
 
@@ -118,7 +118,7 @@ impl Album {
     pub fn into_map(self) -> crate::api::response_container::Map {
         let mut map = HashMap::new();
 
-        map.insert(self.title.unwrap_or_default(), self.id);
+        map.insert(self.title, self.id);
 
         crate::api::response_container::Map::new(map).unwrap_or_default()
     }
@@ -126,7 +126,7 @@ impl Album {
     pub fn get_artist(&self, conn: &mut SqliteConnection) -> Result<Vec<Artist>> {
         Ok(AlbumArtist::belonging_to(self)
             .inner_join(artists::table)
-            .select(artists::all_columns)
+            .select(Artist::as_select())
             .get_results(conn)?)
     }
 

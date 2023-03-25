@@ -1,27 +1,29 @@
 CREATE TABLE tracks
 (
-    id             INTEGER PRIMARY KEY NOT NULL,
-    album_id       INTEGER DEFAULT NULL,
-    path           TEXT    DEFAULT NULL,
-    filesize       INTEGER             NOT NULL,
-    track_number   INTEGER DEFAULT 1,
-    disc_number    INTEGER DEFAULT 1,
-    disc_title     TEXT    DEFAULT NULL,
-    content_group  TEXT    DEFAULT NULL,
-    title          TEXT    DEFAULT NULL,
-    subtitle       TEXT    DEFAULT NULL,
-    year           INTEGER DEFAULT NULL,
-    release_date   TEXT    DEFAULT NULL,
-    bpm            TEXT    DEFAULT NULL,
-    length         INTEGER DEFAULT NULL,
-    initial_key    TEXT    DEFAULT NULL,
-    language       TEXT    DEFAULT NULL,
-    /*TODO
-    label_id     INTEGER,
-    */
-    original_title TEXT,
-    added_at       TEXT    DEFAULT CURRENT_TIMESTAMP,
+    id                 INTEGER PRIMARY KEY NOT NULL,
+    album_id           INTEGER,
+    path               TEXT,
+    filesize           INTEGER             NOT NULL,
+    track_number       INTEGER DEFAULT 1,
+    disc_number        INTEGER DEFAULT 1,
+    disc_title         TEXT,
+    content_group      TEXT,
+    title              TEXT                NOT NULL,
+    subtitle           TEXT,
+    year               INTEGER,
+    release_date       TEXT,
+    bpm                TEXT,
+    length             INTEGER,
+    initial_key        TEXT,
+    language           TEXT,
+    label_id           INTEGER,
+    original_title     TEXT,
+    added_at           TEXT    DEFAULT CURRENT_TIMESTAMP,
+    art                BLOB,
+    fallback_artist_id INTEGER,
     FOREIGN KEY (album_id) REFERENCES albums (id) ON DELETE RESTRICT,
+    FOREIGN KEY (label_id) REFERENCES record_labels (id) ON DELETE SET NULL,
+    FOREIGN KEY (fallback_artist_id) REFERENCES artists (id) ON DELETE SET NULL,
     UNIQUE (path) ON CONFLICT REPLACE
 );
 
@@ -29,7 +31,7 @@ CREATE TABLE albums
 (
     id    INTEGER PRIMARY KEY NOT NULL,
     year  INTEGER,
-    title TEXT,
+    title TEXT                NOT NULL,
     art   BLOB,
     UNIQUE (title, year)
 );
@@ -37,7 +39,8 @@ CREATE TABLE albums
 CREATE TABLE artists
 (
     id   INTEGER PRIMARY KEY NOT NULL,
-    name TEXT,
+    name TEXT                NOT NULL,
+    art  BLOB,
     UNIQUE (name)
 );
 
@@ -76,4 +79,22 @@ CREATE TABLE track_genres
     FOREIGN KEY (track_id) REFERENCES tracks (id),
     FOREIGN KEY (genre_id) REFERENCES genres (id),
     UNIQUE (track_id, genre_id)
-)
+);
+
+CREATE TABLE record_labels
+(
+    id   INTEGER PRIMARY KEY NOT NULL,
+    name TEXT                NOT NULL,
+    UNIQUE (name)
+);
+
+CREATE TABLE users
+(
+    id       INTEGER PRIMARY KEY NOT NULL,
+    username TEXT                NOT NULL,
+    password TEXT                NOT NULL,
+    email    TEXT,
+    role     TEXT                NOT NULL DEFAULT 'user',
+    UNIQUE (username)
+);
+

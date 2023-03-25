@@ -41,14 +41,14 @@ impl Map {
     pub fn from_artists(v: Vec<Artist>) -> Option<Self> {
         let mut map = HashMap::new();
         for i in v {
-            map.insert(i.name.unwrap_or_default(), i.id);
+            map.insert(i.name, i.id);
         }
         Map::new(map)
     }
     pub fn from_tracks(v: Vec<Track>) -> Option<Self> {
         let mut map = HashMap::new();
         for i in v {
-            map.insert(i.title.unwrap_or_default(), i.id);
+            map.insert(i.title, i.id);
         }
         Map::new(map)
     }
@@ -62,7 +62,7 @@ pub struct MetaDataContainer {
     index: Option<Order>,
     disc_title: Option<String>,
     content_group: Option<String>,
-    title: Option<String>,
+    title: String,
     subtitle: Option<String>,
     year: Option<i32>,
     release_date: Option<String>,
@@ -93,7 +93,7 @@ pub struct TrackSummary {
 impl From<Track> for TrackSummary {
     fn from(v: Track) -> Self {
         Self {
-            title: v.title.unwrap_or_default(),
+            title: v.title,
             id: v.id,
             disc_number: v.disc_number.unwrap_or(1),
             track_number: v.track_number.unwrap_or(1),

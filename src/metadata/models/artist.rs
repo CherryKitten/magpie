@@ -10,7 +10,7 @@ use std::collections::HashMap;
 #[diesel(table_name = artists)]
 pub struct Artist {
     pub id: i32,
-    pub name: Option<String>,
+    pub name: String,
 }
 
 impl Artist {
@@ -55,17 +55,20 @@ impl Artist {
 
     pub fn all(conn: &mut SqliteConnection) -> Result<Vec<Self>> {
         Ok(artists::table
-            .select(artists::all_columns)
+            .select(Artist::as_select())
             .get_results(conn)?)
     }
 
     pub fn get_by_id(id: i32, conn: &mut SqliteConnection) -> Result<Self> {
-        Ok(artists::table.find(id).first(conn)?)
+        Ok(artists::table
+            .select(Artist::as_select())
+            .find(id)
+            .first(conn)?)
     }
 
     pub fn get_by_title(title: &str, conn: &mut SqliteConnection) -> Result<Self> {
         Ok(artists::table
-            .select(artists::all_columns)
+            .select(Artist::as_select())
             .filter(artists::name.like(format!("%{title}%")))
             .get_result::<Artist>(conn)?)
     }
@@ -81,7 +84,7 @@ impl Artist {
     pub fn into_map(self) -> crate::api::response_container::Map {
         let mut map = HashMap::new();
 
-        map.insert(self.name.unwrap_or_default(), self.id);
+        map.insert(self.name, self.id);
 
         crate::api::response_container::Map::new(map).unwrap_or_default()
     }

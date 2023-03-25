@@ -5,3 +5,5 @@ DROP TABLE genres;
 DROP TABLE track_artists;
 DROP TABLE album_artists;
 DROP TABLE track_genres;
+DROP TABLE record_labels;
+DROP TABLE users;

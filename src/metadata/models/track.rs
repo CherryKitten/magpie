@@ -5,7 +5,7 @@ use std::path::Path;
 use anyhow::{Error, Result};
 use duplicate::duplicate;
 use lofty::{Accessor, FileProperties, ItemKey, Tag};
-use log::trace;
+use log::{debug};
 
 use super::*;
 
@@ -46,7 +46,7 @@ impl Track {
     ) -> Result<Self> {
         let (tag, properties) = tag;
 
-        trace!("Inserting or updating {:?}", path);
+        debug!("Inserting or updating {:?}", path);
 
         let file_size = fs::metadata(path)?.len();
 

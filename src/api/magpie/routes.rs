@@ -6,6 +6,9 @@ use super::dto::*;
 use crate::api::AppState;
 use crate::Result;
 use anyhow::Context;
+use axum::body::StreamBody;
+use axum::http::StatusCode;
+use axum::response::{IntoResponse, Response};
 use axum::{
     extract::{Path, Query, State},
     routing::get,
@@ -13,6 +16,7 @@ use axum::{
 };
 use duplicate::duplicate;
 use serde::{Deserialize, Serialize};
+use tokio_util::io::ReaderStream;
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Filter {
@@ -45,7 +49,7 @@ pub fn api_routes() -> Router<AppState> {
         .route("/albums/:id", get(get_album))
         .route("/tracks", get(get_tracks))
         .route("/tracks/:id", get(get_track))
-        .route("/play/:id", get(unimplemented))
+        .route("/play/:id", get(play_track))
         .route("/art/:id", get(unimplemented))
         .route("/search/:query", get(unimplemented))
 }
@@ -273,10 +277,7 @@ async fn get_track(
 ) -> Result<Json<MagpieResponse>> {
     let mut conn = db_conn!(state);
 
-    let result = tracks::table
-        .select(Track::as_select())
-        .find(id)
-        .first::<Track>(&mut conn);
+    let result = Track::get_by_id(id, &mut conn);
 
     let response = match result {
         Ok(result) => {
@@ -287,4 +288,21 @@ async fn get_track(
     };
 
     Ok(Json(response))
+}
+
+async fn play_track(Path(id): Path<i32>, State(state): State<AppState>) -> Result<Response> {
+    let mut conn = db_conn!(state);
+
+    let result = Track::get_by_id(id, &mut conn)?;
+
+    let response = match tokio::fs::File::open(result.path.unwrap_or_default()).await {
+        Ok(file) => {
+            let stream = ReaderStream::new(file);
+            let body = StreamBody::new(stream);
+            body.into_response()
+        }
+        Err(error) => (StatusCode::NOT_FOUND, error.to_string()).into_response(),
+    };
+
+    Ok(response)
 }

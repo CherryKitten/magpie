@@ -4,6 +4,8 @@ pub mod album;
 pub mod artist;
 pub mod genre;
 pub mod track;
+use serde::{Deserialize, Serialize};
+use serde_with::skip_serializing_none;
 
 pub use album::Album;
 pub use artist::Artist;

@@ -1,23 +1,35 @@
-use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 
 use anyhow::{Error, Result};
-use duplicate::duplicate;
+
 use lofty::{Accessor, FileProperties, ItemKey, Tag};
-use log::{debug};
+use log::debug;
 
 use super::*;
 
+#[skip_serializing_none]
 #[derive(
-    Debug, Default, PartialEq, Eq, Selectable, Queryable, QueryableByName, Insertable, Identifiable,
+    Debug,
+    Default,
+    PartialEq,
+    Eq,
+    Selectable,
+    Queryable,
+    QueryableByName,
+    Insertable,
+    Identifiable,
+    Serialize,
+    Deserialize,
 )]
 #[diesel(belongs_to(Album))]
 #[diesel(table_name = tracks)]
 pub struct Track {
     pub id: i32,
     pub album_id: Option<i32>,
+    #[serde(skip)]
     pub path: Option<String>,
+    #[serde(skip)]
     pub filesize: i32,
     pub track_number: Option<i32>,
     pub disc_number: Option<i32>,
@@ -34,6 +46,7 @@ pub struct Track {
     pub label_id: Option<i32>,
     pub original_title: Option<String>,
     pub added_at: Option<String>,
+    #[serde(skip)]
     pub art: Option<Vec<u8>>,
     pub fallback_artist_id: Option<i32>,
 }
@@ -86,9 +99,7 @@ impl Track {
                 .ok_or(Error::msg("No title"))?),
             tracks::track_number.eq(tag.track().unwrap_or(1) as i32),
             tracks::disc_number.eq(tag.disk().unwrap_or(1) as i32),
-            tracks::path.eq(path
-                .to_str()
-                .ok_or(Error::msg("Could not get path"))?),
+            tracks::path.eq(path.to_str().ok_or(Error::msg("Could not get path"))?),
             tracks::filesize.eq(file_size as i32),
             tracks::year.eq(tag.year().map(|year| year as i32)),
             tracks::release_date.eq(tag.get_string(&ItemKey::OriginalReleaseDate)),
@@ -150,56 +161,6 @@ impl Track {
             .is_ok()
     }
 
-    pub fn get(
-        mut filter: HashMap<String, String>,
-        conn: &mut SqliteConnection,
-    ) -> Result<Vec<Self>> {
-        let mut select = tracks::table.select(Track::as_select()).into_boxed();
-
-        if !filter.is_empty() {
-            duplicate! {
-                [
-                    key statement;
-                    [ "title" ]         [ tracks::title.like(format!("%{item}%")) ];
-                    [ "subtitle" ]      [ tracks::subtitle.like(format!("%{item}%")) ];
-                    [ "album" ]         [ tracks::album_id.eq(Album::get_by_title(&item, conn)?.id) ];
-                    [ "year" ]          [ tracks::year.eq((item.parse::<i32>()?)) ];
-                    [ "bpm" ]           [ tracks::bpm.eq(item) ];
-                    [ "language" ]      [ tracks::language.eq(item) ];
-                ]
-                if let Some(item) = filter.remove(key) {
-                select = select.filter(statement);
-            }}
-        }
-
-        select = select.limit(
-            filter
-                .remove("limit")
-                .unwrap_or("50".to_string())
-                .parse()
-                .unwrap(),
-        );
-        select = select.offset(
-            filter
-                .remove("offset")
-                .unwrap_or("0".to_string())
-                .parse()
-                .unwrap(),
-        );
-
-        select = select
-            .distinct()
-            .order_by(tracks::disc_number)
-            .then_order_by(tracks::track_number);
-
-        let result: Vec<Track> = select.load(conn)?;
-        if !result.is_empty() {
-            Ok(result)
-        } else {
-            Err(Error::msg("Did not find any tracks"))
-        }
-    }
-
     pub fn get_all(conn: &mut SqliteConnection) -> Result<Vec<Self>> {
         Ok(tracks::table.select(Track::as_select()).get_results(conn)?)
     }
@@ -250,12 +211,6 @@ impl Track {
             .inner_join(tracks::table)
             .select(Track::as_select())
             .get_results(conn)?)
-    }
-
-    pub fn get_by_artist_title(title: &str, conn: &mut SqliteConnection) -> Result<Vec<Self>> {
-        let id = Artist::get_by_title(title, conn)?.id;
-
-        Self::get_by_artist_id(id, conn)
     }
 
     pub fn get_by_genre_id(id: i32, conn: &mut SqliteConnection) -> Result<Vec<Self>> {

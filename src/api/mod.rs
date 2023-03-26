@@ -1,4 +1,3 @@
-use crate::api::response_container::ResponseContainer;
 use crate::db::DbPool;
 use anyhow::{Context, Result};
 use axum::http::Method;
@@ -10,7 +9,6 @@ use std::net::SocketAddr;
 use tower_http::trace::TraceLayer;
 
 pub mod magpie;
-pub mod response_container;
 pub mod subsonic;
 
 #[derive(Clone)]
@@ -21,7 +19,6 @@ pub struct AppState {
 #[derive(Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum Response {
-    MagpieResponse(ResponseContainer),
     SubsonicResponse(subsonic::SubsonicResponse),
 }
 

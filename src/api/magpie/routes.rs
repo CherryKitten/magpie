@@ -7,7 +7,7 @@ use crate::api::AppState;
 use crate::Result;
 use anyhow::Context;
 use axum::body::StreamBody;
-use axum::http::StatusCode;
+use axum::http::{header, StatusCode};
 use axum::response::{IntoResponse, Response};
 use axum::{
     extract::{Path, Query, State},
@@ -50,7 +50,7 @@ pub fn api_routes() -> Router<AppState> {
         .route("/tracks", get(get_tracks))
         .route("/tracks/:id", get(get_track))
         .route("/play/:id", get(play_track))
-        .route("/art/:id", get(unimplemented))
+        .route("/art/:id", get(get_art))
         .route("/search/:query", get(unimplemented))
 }
 
@@ -305,4 +305,17 @@ async fn play_track(Path(id): Path<i32>, State(state): State<AppState>) -> Resul
     };
 
     Ok(response)
+}
+
+async fn get_art(Path(id): Path<i32>, State(state): State<AppState>) -> Result<impl IntoResponse> {
+    let mut conn = db_conn!(state);
+
+    let result: Art = art::table
+        .select(Art::as_select())
+        .find(id)
+        .first::<Art>(&mut conn)?;
+
+    let response = result.data;
+
+    Ok(([(header::CONTENT_TYPE, "image/jpeg")], response))
 }

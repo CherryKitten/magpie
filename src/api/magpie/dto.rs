@@ -36,6 +36,7 @@ pub struct MagpieResponse {
 pub struct MagpieArtist {
     pub id: i32,
     pub name: String,
+    pub art: Option<String>,
 }
 
 #[skip_serializing_none]
@@ -145,7 +146,9 @@ impl MagpieTrack {
             label_id: track.label_id,
             original_title: track.original_title,
             added_at: track.added_at,
-            art: None,
+            art: track
+                .art_id
+                .map(|v| format!("http://localhost:8080/api/art/{v}")),
         };
 
         Ok(data)
@@ -154,18 +157,22 @@ impl MagpieTrack {
 
 impl MagpieAlbum {
     pub fn new(album: Album, conn: &mut SqliteConnection) -> Result<Self> {
+        let artist = Option::from(
+            album
+                .get_artist(conn)?
+                .into_iter()
+                .map(|v| v.name)
+                .collect::<Vec<String>>(),
+        );
+
         let data = MagpieAlbum {
             id: album.id,
             title: album.title.clone(),
             year: album.year,
-            artist: Option::from(
-                album
-                    .get_artist(conn)?
-                    .into_iter()
-                    .map(|v| v.name)
-                    .collect::<Vec<String>>(),
-            ),
-            art: None,
+            artist,
+            art: album
+                .art_id
+                .map(|v| format!("http://localhost:8080/api/art/{v}")),
         };
 
         Ok(data)
@@ -177,6 +184,9 @@ impl MagpieArtist {
         let data = MagpieArtist {
             id: artist.id,
             name: artist.name,
+            art: artist
+                .art_id
+                .map(|v| format!("http://localhost:8080/api/art/{v}")),
         };
 
         Ok(data)

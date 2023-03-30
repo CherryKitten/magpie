@@ -13,7 +13,15 @@ diesel::table! {
         id -> Integer,
         year -> Nullable<Integer>,
         title -> Text,
-        art -> Nullable<Binary>,
+        art_id -> Nullable<Integer>,
+    }
+}
+
+diesel::table! {
+    art (id) {
+        id -> Integer,
+        hash -> Double,
+        data -> Binary,
     }
 }
 
@@ -21,7 +29,7 @@ diesel::table! {
     artists (id) {
         id -> Integer,
         name -> Text,
-        art -> Nullable<Binary>,
+        art_id -> Nullable<Integer>,
     }
 }
 
@@ -76,7 +84,7 @@ diesel::table! {
         label_id -> Nullable<Integer>,
         original_title -> Nullable<Text>,
         added_at -> Nullable<Text>,
-        art -> Nullable<Binary>,
+        art_id -> Nullable<Integer>,
         fallback_artist_id -> Nullable<Integer>,
     }
 }
@@ -93,17 +101,21 @@ diesel::table! {
 
 diesel::joinable!(album_artists -> albums (album_id));
 diesel::joinable!(album_artists -> artists (artist_id));
+diesel::joinable!(albums -> art (art_id));
+diesel::joinable!(artists -> art (art_id));
 diesel::joinable!(track_artists -> artists (artist_id));
 diesel::joinable!(track_artists -> tracks (track_id));
 diesel::joinable!(track_genres -> genres (genre_id));
 diesel::joinable!(track_genres -> tracks (track_id));
 diesel::joinable!(tracks -> albums (album_id));
+diesel::joinable!(tracks -> art (art_id));
 diesel::joinable!(tracks -> artists (fallback_artist_id));
 diesel::joinable!(tracks -> record_labels (label_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     album_artists,
     albums,
+    art,
     artists,
     genres,
     record_labels,

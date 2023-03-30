@@ -19,29 +19,39 @@ CREATE TABLE tracks
     label_id           INTEGER,
     original_title     TEXT,
     added_at           TEXT    DEFAULT CURRENT_TIMESTAMP,
-    art                BLOB,
+    art_id             INTEGER,
     fallback_artist_id INTEGER,
     FOREIGN KEY (album_id) REFERENCES albums (id) ON DELETE RESTRICT,
     FOREIGN KEY (label_id) REFERENCES record_labels (id) ON DELETE SET NULL,
     FOREIGN KEY (fallback_artist_id) REFERENCES artists (id) ON DELETE SET NULL,
+    FOREIGN KEY (art_id) REFERENCES art (id) ON DELETE SET NULL,
     UNIQUE (path) ON CONFLICT REPLACE
 );
 
 CREATE TABLE albums
 (
-    id    INTEGER PRIMARY KEY NOT NULL,
-    year  INTEGER,
-    title TEXT                NOT NULL,
-    art   BLOB,
+    id     INTEGER PRIMARY KEY NOT NULL,
+    year   INTEGER,
+    title  TEXT                NOT NULL,
+    art_id INTEGER,
+    FOREIGN KEY (art_id) REFERENCES art (id) ON DELETE SET NULL,
     UNIQUE (title, year)
 );
 
 CREATE TABLE artists
 (
-    id   INTEGER PRIMARY KEY NOT NULL,
-    name TEXT                NOT NULL,
-    art  BLOB,
+    id     INTEGER PRIMARY KEY NOT NULL,
+    name   TEXT                NOT NULL,
+    art_id INTEGER,
+    FOREIGN KEY (art_id) REFERENCES art (id) ON DELETE SET NULL,
     UNIQUE (name)
+);
+
+CREATE TABLE art
+(
+    id   INTEGER PRIMARY KEY NOT NULL,
+    hash DOUBLE              NOT NULL,
+    data BLOB                NOT NULL
 );
 
 CREATE TABLE track_artists

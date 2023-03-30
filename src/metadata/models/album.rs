@@ -5,12 +5,13 @@ use lofty::Picture;
 #[derive(
     Debug, PartialEq, Eq, Selectable, Queryable, QueryableByName, Insertable, Identifiable,
 )]
+#[diesel(belongs_to(Art))]
 #[diesel(table_name = albums)]
 pub struct Album {
     pub id: i32,
     pub year: Option<i32>,
     pub title: String,
-    pub art: Option<Vec<u8>>,
+    pub art_id: Option<i32>,
 }
 
 impl Album {
@@ -21,10 +22,16 @@ impl Album {
         picture: Option<&Picture>,
         conn: &mut SqliteConnection,
     ) -> Result<Self> {
+        let picture = if let Some(picture) = picture {
+            Art::new(picture.to_owned(), conn).ok()
+        } else {
+            None
+        };
+
         let insert = (
             albums::title.eq(title),
             albums::year.eq(year),
-            albums::art.eq(picture.map(|picture| picture.data())),
+            albums::art_id.eq(picture.map(|picture| picture.id)),
         );
         let album: Album = diesel::insert_into(albums::table)
             .values(&insert)

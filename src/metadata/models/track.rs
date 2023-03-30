@@ -8,28 +8,16 @@ use log::debug;
 
 use super::*;
 
-#[skip_serializing_none]
 #[derive(
-    Debug,
-    Default,
-    PartialEq,
-    Eq,
-    Selectable,
-    Queryable,
-    QueryableByName,
-    Insertable,
-    Identifiable,
-    Serialize,
-    Deserialize,
+    Debug, Default, PartialEq, Eq, Selectable, Queryable, QueryableByName, Insertable, Identifiable,
 )]
 #[diesel(belongs_to(Album))]
+#[diesel(belongs_to(Art))]
 #[diesel(table_name = tracks)]
 pub struct Track {
     pub id: i32,
     pub album_id: Option<i32>,
-    #[serde(skip)]
     pub path: Option<String>,
-    #[serde(skip)]
     pub filesize: i32,
     pub track_number: Option<i32>,
     pub disc_number: Option<i32>,
@@ -46,8 +34,7 @@ pub struct Track {
     pub label_id: Option<i32>,
     pub original_title: Option<String>,
     pub added_at: Option<String>,
-    #[serde(skip)]
-    pub art: Option<Vec<u8>>,
+    pub art_id: Option<i32>,
     pub fallback_artist_id: Option<i32>,
 }
 
@@ -111,7 +98,7 @@ impl Track {
             tracks::bpm.eq(tag.get_string(&ItemKey::BPM)),
             tracks::initial_key.eq(tag.get_string(&ItemKey::InitialKey)),
             tracks::language.eq(tag.get_string(&ItemKey::Language)),
-            tracks::art.eq(None::<Vec<u8>>),
+            tracks::art_id.eq(None::<i32>),
             tracks::label_id.eq(None::<i32>),
             tracks::fallback_artist_id.eq(None::<i32>),
         );

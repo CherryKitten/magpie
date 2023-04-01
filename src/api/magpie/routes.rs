@@ -14,6 +14,7 @@ use axum::{
     routing::get,
     Json, Router,
 };
+use diesel::query_dsl::InternalJoinDsl;
 use duplicate::duplicate;
 use serde::{Deserialize, Serialize};
 use tokio_util::io::ReaderStream;
@@ -248,8 +249,10 @@ async fn get_tracks(
         .limit(limit)
         .offset(offset)
         .distinct()
-        .order_by(tracks::disc_number)
-        .then_order_by(tracks::track_number);
+        .then_order_by(tracks::album_id)
+        .then_order_by(tracks::disc_number)
+        .then_order_by(tracks::track_number)
+        .select(Track::as_select());
 
     let result: Vec<Track> = select.load(&mut conn)?;
 

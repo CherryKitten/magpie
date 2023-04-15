@@ -82,6 +82,7 @@ pub enum MagpieStatus {
 }
 
 #[derive(PartialEq, Eq, Debug, Serialize, Deserialize, Default)]
+#[serde(untagged)]
 #[allow(clippy::large_enum_variant)]
 pub enum MagpieData {
     Artists(Vec<MagpieArtist>),

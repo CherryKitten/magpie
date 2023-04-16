@@ -1,8 +1,9 @@
-use crate::metadata::*;
 use anyhow::Result;
 use diesel::SqliteConnection;
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
+
+use crate::metadata::*;
 
 const MAJOR: u32 = 0;
 const MINOR: u32 = 1;
@@ -64,7 +65,8 @@ pub struct MagpieTrack {
     pub year: Option<i32>,
     pub release_date: Option<String>,
     pub bpm: Option<String>,
-    pub length: Option<i32>,
+    pub duration: Option<i32>,
+    pub artist: Option<Vec<String>>,
     pub initial_key: Option<String>,
     pub language: Option<String>,
     pub label_id: Option<i32>,
@@ -128,9 +130,23 @@ impl MagpieResponse {
 
 impl MagpieTrack {
     pub fn new(track: Track, conn: &mut SqliteConnection) -> Result<Self> {
+        let artist = Some(
+            track
+                .get_artist(conn)?
+                .iter()
+                .map(|artist| artist.name.clone())
+                .collect(),
+        );
+
+        let art = track
+            .art_id
+            .map(|v| format!("http://localhost:8080/api/art/{v}"));
+
+        let album = Some(track.get_album(conn)?.title);
+
         let data = MagpieTrack {
             id: track.id,
-            album: Some(track.get_album(conn)?.title),
+            album,
             album_id: track.album_id,
             track_number: track.track_number,
             disc_number: track.disc_number,
@@ -141,15 +157,14 @@ impl MagpieTrack {
             year: track.year,
             release_date: track.release_date,
             bpm: track.bpm,
-            length: track.length,
+            duration: track.length,
+            artist,
             initial_key: track.initial_key,
             language: track.language,
             label_id: track.label_id,
             original_title: track.original_title,
             added_at: track.added_at,
-            art: track
-                .art_id
-                .map(|v| format!("http://localhost:8080/api/art/{v}")),
+            art,
         };
 
         Ok(data)

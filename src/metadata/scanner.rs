@@ -1,87 +1,63 @@
-use crate::db::DbPool;
-use crate::metadata::models::Track;
-use anyhow::Result;
-use lofty::{read_from_path, Accessor, AudioFile, FileProperties, Tag, TaggedFileExt};
-use log::{error, info, trace};
-use std::fs;
 use std::path::Path;
 
+use anyhow::Result;
+use lofty::{read_from_path, AudioFile, FileProperties, Tag, TaggedFileExt};
+use walkdir::WalkDir;
+
+use crate::db::DbPool;
+use crate::metadata::Track;
+
 pub fn scan(dir: &Path, pool: DbPool) -> Result<()> {
-    info!("Scanning directory {:?}", dir);
-
-    for entry in fs::read_dir(dir)? {
-        let path = entry?.path();
-        let mut conn = pool.get()?;
-
-        if path.is_dir() {
-            if let Err(e) = scan(&path, pool.clone()) {
-                error!("{e}");
-                continue;
-            }
-        } else {
-            match read_file(&path)? {
-                FileType::Music(tag) => {
-                    info!("Found track {:?}", tag.0.title());
-                    if !Track::check(&path, &mut conn) {
-                        Track::new(tag, &path, &mut conn)?;
-                    };
-                    continue;
-                }
-                FileType::Image => {
-                    info!("Found image {:?}", path);
-                }
-                FileType::Unsupported => {
-                    info!("Unsupported filetype on {:?}", path);
-                    continue;
-                }
-            }
-        }
+    log::info!("Scanning directory {:?}", dir);
+    for entry in WalkDir::new(dir).into_iter().filter_map(|e| {
+        e.ok().filter(|e| {
+            !e.file_name()
+                .to_str()
+                .map(|s| s.starts_with('.'))
+                .unwrap_or(false)
+        })
+    }) {
+        let path = entry.path();
+        let _ = read_file(path, pool.clone());
     }
 
     Ok(())
 }
 
-enum FileType {
-    Music((Tag, FileProperties)),
-    Image,
-    Unsupported,
-}
+fn read_file(path: &Path, pool: DbPool) -> Result<()> {
+    log::debug!("Reading file {:?}", path);
 
-fn read_file(path: &Path) -> Result<FileType> {
-    trace!("Reading file {:?}", path);
-
-    let file = match path
+    match path
         .extension()
         .unwrap_or_default()
         .to_str()
         .unwrap_or_default()
+        .to_lowercase()
+        .as_str()
     {
-        "flac" | "mp3" | "opus" => {
+        "flac" | "mp3" | "opus" | "aif" | "aiff" | "wav" | "alac" | "ape" | "m4a" | "ogg" => {
             if let Ok(file) = read_tags(path) {
-                FileType::Music(file)
-            } else {
-                FileType::Unsupported
+                let mut conn = pool.get()?;
+                if !Track::check(path, &mut conn) {
+                    Track::new(file, path, &mut conn)?;
+                }
             }
         }
-        "png" | "jpg" | "jpeg" | "webp" => FileType::Image,
-        _ => FileType::Unsupported,
+        // TODO: Do something with image files
+        //"png" | "jpg" | "jpeg" | "webp" => {}
+        _ => {}
     };
 
-    Ok(file)
+    Ok(())
 }
 
 fn read_tags(path: &Path) -> Result<(Tag, FileProperties)> {
     let file = read_from_path(path)?;
 
-    let tag = match file.primary_tag() {
-        Some(tag) => tag,
-        None => match file.first_tag() {
-            Some(tag) => tag,
-            None => return Err(anyhow::Error::msg("Could not find tag in file")),
-        },
-    };
+    let tag = file.primary_tag().or_else(|| file.first_tag());
 
-    let properties = file.properties();
-
-    Ok((tag.to_owned(), properties.to_owned()))
+    match tag {
+        Some(tag) => Ok((tag.to_owned(), file.properties().to_owned())),
+        None => Err(anyhow::Error::msg("Could not find tag in file")),
+    }
 }

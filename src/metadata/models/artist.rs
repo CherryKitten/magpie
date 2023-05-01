@@ -1,6 +1,6 @@
-use super::*;
-
 use anyhow::Result;
+
+use super::*;
 
 #[derive(
     Debug, PartialEq, Eq, Selectable, Queryable, QueryableByName, Insertable, Identifiable,
@@ -15,35 +15,46 @@ pub struct Artist {
 
 impl Artist {
     pub fn new(name: &str, conn: &mut SqliteConnection) -> Result<Self> {
-        diesel::insert_into(artists::table)
-            .values(artists::name.eq(name))
-            .execute(conn)?;
+        log::debug!("Creating new Artist {name}");
 
-        Artist::get_by_title(name, conn)
+        let artist = diesel::insert_into(artists::table)
+            .values(artists::name.eq(name))
+            .get_result(conn)?;
+
+        Ok(artist)
     }
 
     pub fn all(conn: &mut SqliteConnection) -> Result<Vec<Self>> {
-        Ok(artists::table
+        let artist = artists::table
             .select(Artist::as_select())
-            .get_results(conn)?)
+            .get_results(conn)?;
+
+        Ok(artist)
     }
 
-    pub fn get_by_id(id: i32, conn: &mut SqliteConnection) -> Result<Self> {
+    pub fn by_id(id: i32, conn: &mut SqliteConnection) -> Result<Self> {
         Ok(artists::table
             .select(Artist::as_select())
             .find(id)
             .first(conn)?)
     }
 
-    pub fn get_by_title(title: &str, conn: &mut SqliteConnection) -> Result<Self> {
+    pub fn by_title(title: &str, conn: &mut SqliteConnection) -> Result<Self> {
         Ok(artists::table
             .select(Artist::as_select())
             .filter(artists::name.like(format!("%{title}%")))
             .get_result::<Artist>(conn)?)
     }
 
-    pub fn get_by_title_or_new(title: &str, conn: &mut SqliteConnection) -> Result<Self> {
-        let artist = Artist::get_by_title(title, conn);
+    pub fn by_title_exact(title: &str, conn: &mut SqliteConnection) -> Result<Self> {
+        Ok(artists::table
+            .select(Artist::as_select())
+            .filter(artists::name.like(title.to_string()))
+            .get_result::<Artist>(conn)?)
+    }
+
+    pub fn by_title_or_new(title: &str, conn: &mut SqliteConnection) -> Result<Self> {
+        let artist = Artist::by_title_exact(title, conn);
         match artist {
             Ok(artist) => Ok(artist),
             Err(_) => Artist::new(title, conn),

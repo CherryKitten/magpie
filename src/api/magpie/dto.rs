@@ -132,7 +132,7 @@ impl MagpieTrack {
     pub fn new(track: Track, conn: &mut SqliteConnection) -> Result<Self> {
         let artist = Some(
             track
-                .get_artist(conn)?
+                .artist(conn)?
                 .iter()
                 .map(|artist| artist.name.clone())
                 .collect(),
@@ -142,7 +142,7 @@ impl MagpieTrack {
             .art_id
             .map(|v| format!("http://localhost:8080/api/art/{v}"));
 
-        let album = Some(track.get_album(conn)?.title);
+        let album = Some(track.album(conn)?.title);
 
         let data = MagpieTrack {
             id: track.id,
@@ -175,7 +175,7 @@ impl MagpieAlbum {
     pub fn new(album: Album, conn: &mut SqliteConnection) -> Result<Self> {
         let artist = Option::from(
             album
-                .get_artist(conn)?
+                .artist(conn)?
                 .into_iter()
                 .map(|v| v.name)
                 .collect::<Vec<String>>(),

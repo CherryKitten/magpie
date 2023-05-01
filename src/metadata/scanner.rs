@@ -1,5 +1,4 @@
 use std::path::Path;
-
 use anyhow::Result;
 use lofty::{read_from_path, AudioFile, FileProperties, Tag, TaggedFileExt};
 use walkdir::WalkDir;

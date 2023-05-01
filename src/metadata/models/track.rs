@@ -64,7 +64,7 @@ impl Track {
 
         let album = match tag.album() {
             Some(album) => {
-                if let Ok(album) = Album::get_by_title(&album, conn) {
+                if let Ok(album) = Album::by_title_exact(&album, conn) {
                     Some(album)
                 } else {
                     Some(Album::new(
@@ -111,12 +111,12 @@ impl Track {
             .get_result(conn)?;
 
         for artist in artists {
-            Artist::get_by_title_or_new(artist, conn)?;
+            Artist::by_title_or_new(artist, conn)?;
 
             diesel::insert_into(track_artists::table)
                 .values((
                     track_artists::track_id.eq(track.id),
-                    track_artists::artist_id.eq(Artist::get_by_title(artist, conn)?.id),
+                    track_artists::artist_id.eq(Artist::by_title(artist, conn)?.id),
                 ))
                 .on_conflict_do_nothing()
                 .execute(conn)?;
@@ -148,32 +148,32 @@ impl Track {
             .is_ok()
     }
 
-    pub fn get_all(conn: &mut SqliteConnection) -> Result<Vec<Self>> {
+    pub fn all(conn: &mut SqliteConnection) -> Result<Vec<Self>> {
         Ok(tracks::table.select(Track::as_select()).get_results(conn)?)
     }
 
-    pub fn get_by_id(id: i32, conn: &mut SqliteConnection) -> Result<Self> {
+    pub fn by_id(id: i32, conn: &mut SqliteConnection) -> Result<Self> {
         Ok(tracks::table
             .select(Track::as_select())
             .find(id)
             .first(conn)?)
     }
 
-    pub fn get_one_by_title(title: &str, conn: &mut SqliteConnection) -> Result<Self> {
+    pub fn by_title_one(title: &str, conn: &mut SqliteConnection) -> Result<Self> {
         Ok(tracks::table
             .select(Track::as_select())
             .filter(tracks::title.like(title))
             .first::<Track>(conn)?)
     }
 
-    pub fn get_by_title(title: &str, conn: &mut SqliteConnection) -> Result<Vec<Self>> {
+    pub fn by_title_all(title: &str, conn: &mut SqliteConnection) -> Result<Vec<Self>> {
         Ok(tracks::table
             .select(Track::as_select())
             .filter(tracks::title.like(title))
             .get_results::<Track>(conn)?)
     }
 
-    pub fn get_by_album_id(id: i32, conn: &mut SqliteConnection) -> Result<Vec<Self>> {
+    pub fn by_album_id(id: i32, conn: &mut SqliteConnection) -> Result<Vec<Self>> {
         Ok(tracks::table
             .select(Track::as_select())
             .filter(tracks::album_id.eq(id))
@@ -182,13 +182,13 @@ impl Track {
             .get_results(conn)?)
     }
 
-    pub fn get_by_album_title(title: &str, conn: &mut SqliteConnection) -> Result<Vec<Self>> {
-        let id = Album::get_by_title(title, conn)?.id;
+    pub fn by_album_title(title: &str, conn: &mut SqliteConnection) -> Result<Vec<Self>> {
+        let id = Album::by_title(title, conn)?.id;
 
-        Self::get_by_album_id(id, conn)
+        Self::by_album_id(id, conn)
     }
 
-    pub fn get_by_artist_id(id: i32, conn: &mut SqliteConnection) -> Result<Vec<Self>> {
+    pub fn by_artist_id(id: i32, conn: &mut SqliteConnection) -> Result<Vec<Self>> {
         let artist: Artist = artists::table
             .select(Artist::as_select())
             .find(id)
@@ -200,7 +200,7 @@ impl Track {
             .get_results(conn)?)
     }
 
-    pub fn get_by_genre_id(id: i32, conn: &mut SqliteConnection) -> Result<Vec<Self>> {
+    pub fn by_genre_id(id: i32, conn: &mut SqliteConnection) -> Result<Vec<Self>> {
         let genre = Genre::get_by_id(id, conn)?;
 
         Ok(TrackGenre::belonging_to(&genre)
@@ -209,17 +209,17 @@ impl Track {
             .get_results(conn)?)
     }
 
-    pub fn get_by_genre_title(title: &str, conn: &mut SqliteConnection) -> Result<Vec<Self>> {
+    pub fn by_genre_title(title: &str, conn: &mut SqliteConnection) -> Result<Vec<Self>> {
         let id = Genre::get_by_title(title, conn)?.id;
 
-        Self::get_by_genre_id(id, conn)
+        Self::by_genre_id(id, conn)
     }
 
-    pub fn get_album(&self, conn: &mut SqliteConnection) -> Result<Album> {
-        Album::get_by_id(self.album_id.ok_or(Error::msg("No album found"))?, conn)
+    pub fn album(&self, conn: &mut SqliteConnection) -> Result<Album> {
+        Album::by_id(self.album_id.ok_or(Error::msg("No album found"))?, conn)
     }
 
-    pub fn get_artist(&self, conn: &mut SqliteConnection) -> Result<Vec<Artist>> {
+    pub fn artist(&self, conn: &mut SqliteConnection) -> Result<Vec<Artist>> {
         Ok(TrackArtist::belonging_to(self)
             .inner_join(artists::table)
             .select(Artist::as_select())

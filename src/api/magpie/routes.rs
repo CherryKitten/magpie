@@ -129,7 +129,7 @@ async fn get_artist(
     };
 
     if response.status == MagpieStatus::Ok {
-        let children = Album::get_by_artist_id(id, &mut conn)?
+        let children = Album::by_artist_id(id, &mut conn)?
             .into_iter()
             .map(|v| MagpieAlbum::new(v, &mut conn).unwrap())
             .collect();
@@ -208,7 +208,7 @@ async fn get_album(
     };
 
     if response.status == MagpieStatus::Ok {
-        let children = Track::get_by_album_id(id, &mut conn)?
+        let children = Track::by_album_id(id, &mut conn)?
             .into_iter()
             .map(|v| MagpieTrack::new(v, &mut conn).unwrap())
             .collect();
@@ -236,7 +236,7 @@ async fn get_tracks(
             key statement;
             [ title ]         [ tracks::title.like(format!("%{item}%")) ];
             [ subtitle ]      [ tracks::subtitle.like(format!("%{item}%")) ];
-            [ album ]         [ tracks::album_id.eq(Album::get_by_title(&item, &mut conn)?.id) ];
+            [ album ]         [ tracks::album_id.eq(Album::by_title(&item, &mut conn)?.id) ];
             [ year ]          [ tracks::year.eq((item.parse::<i32>()?)) ];
             [ bpm ]           [ tracks::bpm.eq(item) ];
             [ language ]      [ tracks::language.eq(item) ];
@@ -280,7 +280,7 @@ async fn get_track(
 ) -> Result<Json<MagpieResponse>> {
     let mut conn = db_conn!(state);
 
-    let result = Track::get_by_id(id, &mut conn);
+    let result = Track::by_id(id, &mut conn);
 
     let response = match result {
         Ok(result) => {
@@ -296,7 +296,7 @@ async fn get_track(
 async fn play_track(Path(id): Path<i32>, State(state): State<AppState>) -> Result<Response> {
     let mut conn = db_conn!(state);
 
-    let result = Track::get_by_id(id, &mut conn)?;
+    let result = Track::by_id(id, &mut conn)?;
 
     let response = match tokio::fs::File::open(result.path.unwrap_or_default()).await {
         Ok(file) => {

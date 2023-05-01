@@ -14,7 +14,7 @@ use axum::{
     routing::get,
     Json, Router,
 };
-use diesel::query_dsl::InternalJoinDsl;
+
 use duplicate::duplicate;
 use serde::{Deserialize, Serialize};
 use tokio_util::io::ReaderStream;

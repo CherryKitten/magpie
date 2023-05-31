@@ -1,24 +1,42 @@
+use std::future::Future;
 use std::path::Path;
+use std::pin::Pin;
+
 use anyhow::Result;
 use lofty::{read_from_path, AudioFile, FileProperties, Tag, TaggedFileExt};
-use walkdir::WalkDir;
+use tokio::{fs, spawn};
 
 use crate::db::DbPool;
 use crate::metadata::Track;
 
-pub fn scan(dir: &Path, pool: DbPool) -> Result<()> {
+pub async fn scan(dir: &Path, pool: DbPool) -> Pin<Box<dyn Future<Output = Result<()>>>> {
     log::info!("Scanning directory {:?}", dir);
-    for entry in WalkDir::new(dir).into_iter().filter_map(|e| {
-        e.ok().filter(|e| {
-            !e.file_name()
-                .to_str()
-                .map(|s| s.starts_with('.'))
-                .unwrap_or(false)
-        })
-    }) {
-        let path = entry.path();
-        let _ = read_file(path, pool.clone());
+
+    let mut entries = fs::read_dir(dir).await?;
+
+    while let Some(entry) = entries.next_entry().await? {
+        if entry.file_name().to_string_lossy().starts_with('.') {
+            continue;
+        }
+        if entry.metadata().await?.file_type().is_dir() {
+            scan(dir, pool.clone()).await;
+        } else {
+            let path = entry.path();
+            let _ = read_file(&*path, pool.clone());
+        }
     }
+
+    // for entry in WalkDir::new(dir).into_iter().filter_map(|e| {
+    //     e.ok().filter(|e| {
+    //         !e.file_name()
+    //             .to_str()
+    //             .map(|s| s.starts_with('.'))
+    //             .unwrap_or(false)
+    //     })
+    // }) {
+    //     let path = entry.path();
+    //     let _ = read_file(path, pool.clone());
+    // }
 
     Ok(())
 }

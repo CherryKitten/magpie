@@ -2,3 +2,4 @@ target
 test_data
 .env
 magpie.toml
+dev

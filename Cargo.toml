@@ -1,24 +1,21 @@
 [package]
 name = "magpie"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[lib]
+name = "magpie_lib"
+path = "src/lib.rs"
+
 [dependencies]
 config = "0.13.3"
-lofty = "0.11.0"
+lofty = "0.15.0"
 serde = { version = "1.0.152", features = ["derive"] }
-diesel = { version = "2.0.3", features = ["sqlite", "returning_clauses_for_sqlite_3_35", "r2d2"] }
-log = "0.4.17"
-anyhow = "1.0.69"
-serde_with = "2.2.0"
-duplicate = "1.0.0"
-axum = { version = "0.6.10", features = ["macros"] }
+serde_with = "3.0.0"
 tokio = { version = "1.26.0", features = ["full"] }
-tokio-util = { version = "0.7.7", features = ["io"] }
-tower-http = { version = "0.4.0", features = ["trace", "cors"] }
-tracing-subscriber = "0.3.16"
-chrono = "0.4.24"
 walkdir = "2.3.3"
-
+thiserror = "1.0"
+clap = { version = "4.3.12", features = ["derive"] }
+sqlx = { version = "0.7.1", features = ["runtime-tokio", "tls-rustls", "postgres", "migrate"]}

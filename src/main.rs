@@ -1,64 +1,51 @@
-pub mod api;
-pub mod db;
-pub mod metadata;
-pub mod scheduler;
-pub use crate::db::establish_connection;
-pub mod settings;
-use crate::db::create_connection_pool;
-use log::{error, info};
-use std::collections::HashMap;
-use tokio::{spawn, try_join};
-
-#[derive(Debug)]
-struct Error(anyhow::Error);
-type Result<T> = std::result::Result<T, Error>;
-
-impl axum::response::IntoResponse for Error {
-    fn into_response(self) -> axum::response::Response {
-        (
-            axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-            format!("Error: {}", self.0),
-        )
-            .into_response()
-    }
-}
-
-impl<E> From<E> for Error
-where
-    E: Into<anyhow::Error>,
-{
-    fn from(error: E) -> Self {
-        Self(error.into())
-    }
-}
+use std::fs::FileType;
+use clap::Parser;
+use magpie_lib::Result;
+use magpie_lib::{db, Args, Mode};
+use walkdir::WalkDir;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    tracing_subscriber::fmt::init();
+    let args = Args::parse();
 
-    let config = settings::get_config()?;
-    let pool = create_connection_pool()?;
-
-    info!(
-        "{:?}",
-        config
-            .clone()
-            .try_deserialize::<HashMap<String, String>>()?
-    );
-
-    let api = spawn(api::run(pool.clone()));
-    let scheduler = spawn(scheduler::run_schedule(pool));
-
-    let (api, scheduler) = try_join!(api, scheduler)?;
-
-    if let Err(error) = api {
-        error!("{error}");
-        std::process::exit(1);
+    match args.mode {
+        Some(Mode::Headless) => println!("Headless Not Yet Implemented"),
+        Some(Mode::Gui) => println!("GUI not yet implemented"),
+        Some(Mode::Cli) => println!("CLI not yet implemented"),
+        None => {}
     }
 
-    if let Err(error) = scheduler {
-        error!("{error}");
-        std::process::exit(1);
+    //let pool = db::setup().await?;
+
+    let scanner = tokio::spawn(scan());
+
+    let result = tokio::try_join!(scanner);
+
+    match result {
+        Ok(_) => println!("Done!"),
+        Err(_) => println!("Something went wrong"),
+    };
+
+    Ok(())
+}
+
+async fn scan() -> Result<()> {
+    let dir = "dev/library";
+
+    for entry in WalkDir::new(dir).into_iter().filter_map(|e| {
+        e.ok().filter(|e| {
+            !e.file_name()
+                .to_str()
+                .map(|s| s.starts_with('.'))
+                .unwrap_or(false)
+        })
+    }) {
+       if entry.file_type().is_dir() {
+           continue
+       };
+
+        let path = entry.path();
+        println!("{path:?}");
     }
 
     Ok(())

@@ -13,7 +13,7 @@ pub async fn run_schedule(pool: DbPool) -> Result<()> {
     loop {
         interval.tick().await;
         info!("Starting metadata scan");
-        match crate::metadata::scanner::scan(path, pool.clone()).await {
+        match crate::metadata::scanner::scan(path, pool.clone()) {
             Ok(_) => {}
             Err(error) => {
                 error!("{error}")

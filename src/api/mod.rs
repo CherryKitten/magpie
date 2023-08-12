@@ -1,25 +1,21 @@
-use crate::db::DbPool;
+use std::net::SocketAddr;
+
 use anyhow::{Context, Result};
 use axum::http::Method;
 use axum::routing::get;
 use axum::{Json, Router};
 use log::info;
-use serde::{Deserialize, Serialize};
-use std::net::SocketAddr;
 use tower_http::trace::TraceLayer;
 
-pub mod magpie;
-pub mod subsonic;
+use crate::api::routes::api_routes;
+use crate::db::DbPool;
+
+pub mod dto;
+pub mod routes;
 
 #[derive(Clone)]
 pub struct AppState {
     pub pool: DbPool,
-}
-
-#[derive(Eq, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
-pub enum Response {
-    SubsonicResponse(subsonic::SubsonicResponse),
 }
 
 pub async fn run(pool: DbPool) -> Result<()> {
@@ -31,11 +27,9 @@ pub async fn run(pool: DbPool) -> Result<()> {
         .allow_methods([Method::GET, Method::POST])
         .allow_origin(tower_http::cors::Any);
 
-    let api = magpie::api_routes();
-    let subsonic = subsonic::subsonic_compat_routes();
+    let api = api_routes();
     let app = Router::new()
         .nest("/api", api)
-        .nest("/rest", subsonic)
         .route("/", get(|| async { Json("Hello World") }))
         .with_state(state)
         .layer(cors)

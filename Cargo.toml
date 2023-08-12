@@ -10,6 +10,7 @@ config = "0.13.3"
 lofty = "0.15.0"
 serde = { version = "1.0.152", features = ["derive"] }
 diesel = { version = "2.0.3", features = ["sqlite", "returning_clauses_for_sqlite_3_35", "r2d2"] }
+diesel_migrations = "2.1.0"
 log = "0.4.17"
 anyhow = "1.0.69"
 serde_with = "3.0.0"

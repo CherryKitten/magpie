@@ -5,7 +5,7 @@ use tokio::{spawn, try_join};
 
 pub use error::{Error, Result};
 
-use crate::db::create_connection_pool;
+use crate::db::{create_connection_pool, run_migrations};
 
 pub mod api;
 pub mod db;
@@ -20,6 +20,8 @@ async fn main() -> Result<()> {
 
     let config = settings::get_config()?;
     let pool = create_connection_pool()?;
+
+    run_migrations(&mut pool.get()?)?;
 
     info!(
         "{:?}",

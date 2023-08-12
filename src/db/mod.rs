@@ -1,6 +1,7 @@
 use diesel::connection::SimpleConnection;
 use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool};
+use diesel::sqlite::Sqlite;
 
 use crate::settings::get_config;
 use crate::Result;
@@ -36,4 +37,16 @@ pub fn create_connection_pool() -> Result<DbPool> {
     )?;
 
     Ok(pool)
+}
+
+use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
+pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("src/db/migrations");
+
+pub fn run_migrations(connection: &mut impl MigrationHarness<Sqlite>) -> Result<()> {
+    log::info!("Running Database Migrations");
+    connection
+        .run_pending_migrations(MIGRATIONS)
+        .expect("Could not run migrations");
+
+    Ok(())
 }

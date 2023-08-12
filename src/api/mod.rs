@@ -1,6 +1,7 @@
 use std::net::SocketAddr;
 
 use anyhow::Context;
+use axum::extract::State;
 use axum::headers::authorization::Basic;
 use axum::headers::Authorization;
 use axum::http::{Method, Request};
@@ -67,13 +68,13 @@ pub async fn run(pool: DbPool) -> Result<()> {
 }
 
 async fn auth<B>(
-    state: AppState,
+    state: State<AppState>,
     auth: TypedHeader<Authorization<Basic>>,
     request: Request<B>,
     next: Next<B>,
 ) -> std::result::Result<Response, StatusCode>
 where
-    B: Clone + Send + 'static,
+    B: Send + 'static,
 {
     let mut conn = state
         .pool

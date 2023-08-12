@@ -7,12 +7,12 @@ edition = "2021"
 
 [dependencies]
 config = "0.13.3"
-lofty = "0.11.0"
+lofty = "0.15.0"
 serde = { version = "1.0.152", features = ["derive"] }
 diesel = { version = "2.0.3", features = ["sqlite", "returning_clauses_for_sqlite_3_35", "r2d2"] }
 log = "0.4.17"
 anyhow = "1.0.69"
-serde_with = "2.2.0"
+serde_with = "3.0.0"
 duplicate = "1.0.0"
 axum = { version = "0.6.10", features = ["macros"] }
 tokio = { version = "1.26.0", features = ["full"] }
@@ -21,4 +21,3 @@ tower-http = { version = "0.4.0", features = ["trace", "cors"] }
 tracing-subscriber = "0.3.16"
 chrono = "0.4.24"
 walkdir = "2.3.3"
-

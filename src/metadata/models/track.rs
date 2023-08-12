@@ -2,7 +2,6 @@ use std::fs;
 use std::path::Path;
 
 use anyhow::{Error, Result};
-
 use lofty::{Accessor, FileProperties, ItemKey, Tag};
 use log::debug;
 
@@ -95,7 +94,7 @@ impl Track {
             tracks::disc_title.eq(tag.get_string(&ItemKey::SetSubtitle)),
             tracks::content_group.eq(tag.get_string(&ItemKey::ContentGroup)),
             tracks::subtitle.eq(tag.get_string(&ItemKey::TrackSubtitle)),
-            tracks::bpm.eq(tag.get_string(&ItemKey::BPM)),
+            tracks::bpm.eq(tag.get_string(&ItemKey::Bpm)),
             tracks::initial_key.eq(tag.get_string(&ItemKey::InitialKey)),
             tracks::language.eq(tag.get_string(&ItemKey::Language)),
             tracks::art_id.eq(None::<i32>),

@@ -1,6 +1,6 @@
 use std::net::SocketAddr;
 
-use anyhow::{Context, Result};
+use anyhow::Context;
 use axum::http::Method;
 use axum::routing::get;
 use axum::{Json, Router};
@@ -9,6 +9,7 @@ use tower_http::trace::TraceLayer;
 
 use crate::api::routes::api_routes;
 use crate::db::DbPool;
+use crate::Result;
 
 pub mod dto;
 pub mod routes;

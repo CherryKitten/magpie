@@ -1,18 +1,20 @@
-use crate::db::schema::*;
-use anyhow::Result;
 use std::collections::hash_map::DefaultHasher;
-pub mod album;
-pub mod artist;
-pub mod genre;
-pub mod track;
+use std::hash::{Hash, Hasher};
+
+use diesel::prelude::*;
 
 pub use album::Album;
 pub use artist::Artist;
 pub use genre::Genre;
 pub use track::Track;
 
-use diesel::prelude::*;
-use std::hash::{Hash, Hasher};
+use crate::db::schema::*;
+use crate::Result;
+
+pub mod album;
+pub mod artist;
+pub mod genre;
+pub mod track;
 
 #[derive(Identifiable, Queryable, Associations, Eq, PartialEq, Debug)]
 #[diesel(table_name = album_artists)]
@@ -66,7 +68,7 @@ impl Art {
         data.hash(&mut hasher);
         let hash = hasher.finish();
         if Self::check_hash(hash as f64, conn) {
-            return Err(anyhow::Error::msg("Image already exists"));
+            return Err(crate::Error::msg("Image already exists"));
         }
 
         let data = Vec::from(data);

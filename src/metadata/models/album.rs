@@ -1,5 +1,6 @@
-use anyhow::Result;
 use lofty::Picture;
+
+use crate::Result;
 
 use super::*;
 

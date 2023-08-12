@@ -1,9 +1,9 @@
-use crate::settings::get_config;
-use anyhow::Result;
 use diesel::connection::SimpleConnection;
 use diesel::prelude::*;
-
 use diesel::r2d2::{ConnectionManager, Pool};
+
+use crate::settings::get_config;
+use crate::Result;
 
 pub type DbPool = Pool<ConnectionManager<SqliteConnection>>;
 

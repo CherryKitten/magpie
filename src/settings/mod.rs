@@ -1,5 +1,6 @@
-use anyhow::Result;
 use config::Config;
+
+use crate::Result;
 
 pub fn get_config() -> Result<Config> {
     Ok(Config::builder()

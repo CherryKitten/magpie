@@ -1,36 +1,18 @@
-pub mod api;
-pub mod db;
-pub mod metadata;
-pub mod scheduler;
-pub use crate::db::establish_connection;
-pub mod settings;
-use crate::db::create_connection_pool;
-use log::{error, info};
 use std::collections::HashMap;
+
+use log::{error, info};
 use tokio::{spawn, try_join};
 
-#[derive(Debug)]
-struct Error(anyhow::Error);
-type Result<T> = std::result::Result<T, Error>;
+pub use error::{Error, Result};
 
-impl axum::response::IntoResponse for Error {
-    fn into_response(self) -> axum::response::Response {
-        (
-            axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-            format!("Error: {}", self.0),
-        )
-            .into_response()
-    }
-}
+use crate::db::create_connection_pool;
 
-impl<E> From<E> for Error
-where
-    E: Into<anyhow::Error>,
-{
-    fn from(error: E) -> Self {
-        Self(error.into())
-    }
-}
+pub mod api;
+pub mod db;
+pub mod error;
+pub mod metadata;
+pub mod scheduler;
+pub mod settings;
 
 #[tokio::main]
 async fn main() -> Result<()> {

@@ -1,9 +1,9 @@
-use anyhow::Result;
 use diesel::SqliteConnection;
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
 
 use crate::metadata::*;
+use crate::Result;
 
 const MAJOR: u32 = 0;
 const MINOR: u32 = 1;

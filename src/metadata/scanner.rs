@@ -1,10 +1,11 @@
 use std::path::Path;
-use anyhow::Result;
+
 use lofty::{read_from_path, AudioFile, FileProperties, Tag, TaggedFileExt};
 use walkdir::WalkDir;
 
 use crate::db::DbPool;
 use crate::metadata::Track;
+use crate::Result;
 
 pub fn scan(dir: &Path, pool: DbPool) -> Result<()> {
     log::info!("Scanning directory {:?}", dir);
@@ -57,6 +58,6 @@ fn read_tags(path: &Path) -> Result<(Tag, FileProperties)> {
 
     match tag {
         Some(tag) => Ok((tag.to_owned(), file.properties().to_owned())),
-        None => Err(anyhow::Error::msg("Could not find tag in file")),
+        None => Err(crate::Error::msg("Could not find tag in file")),
     }
 }

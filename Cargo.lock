@@ -42,7 +42,7 @@ checksum = "b9ccdd8f2a161be9bd5c023df56f1b2a0bd1d83872ae53b71a84a12c9bf6e842"
 dependencies = [
  "proc-macro2",
  "quote",
-    "syn 2.0.28",
+ "syn 2.0.28",
 ]
 
 [[package]]
@@ -110,7 +110,7 @@ dependencies = [
  "heck",
  "proc-macro2",
  "quote",
-    "syn 2.0.28",
+ "syn 2.0.28",
 ]
 
 [[package]]
@@ -273,7 +273,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "scratch",
-    "syn 2.0.28",
+ "syn 2.0.28",
 ]
 
 [[package]]
@@ -290,7 +290,7 @@ checksum = "2345488264226bf682893e25de0769f3360aac9957980ec49361b083ddaa5bc5"
 dependencies = [
  "proc-macro2",
  "quote",
-    "syn 2.0.28",
+ "syn 2.0.28",
 ]
 
 [[package]]
@@ -314,7 +314,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "strsim",
-    "syn 2.0.28",
+ "syn 2.0.28",
 ]
 
 [[package]]
@@ -325,7 +325,7 @@ checksum = "836a9bbc7ad63342d6d6e7b815ccab164bc77a2d95d84bc3117a8c0d5c98e2d5"
 dependencies = [
  "darling_core",
  "quote",
-    "syn 2.0.28",
+ "syn 2.0.28",
 ]
 
 [[package]]
@@ -604,8 +604,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bd070e393353796e801d209ad339e89596eb4c8d430d18ede6a1cced8fafbd99"
 dependencies = [
  "autocfg",
-    "hashbrown 0.12.3",
-    "serde",
+ "hashbrown 0.12.3",
+ "serde",
 ]
 
 [[package]]
@@ -614,8 +614,8 @@ version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d5477fe2230a79769d8dc68e0eabf5437907c0457a5614a9e8dddb67f65eb65d"
 dependencies = [
-    "equivalent",
-    "hashbrown 0.14.0",
+ "equivalent",
+ "hashbrown 0.14.0",
  "serde",
 ]
 
@@ -698,7 +698,7 @@ version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8143c1ac799df98778738e48e403990dcae27c9843f89ae0bd79967ddd512448"
 dependencies = [
-    "base64 0.21.2",
+ "base64 0.21.2",
  "byteorder",
  "flate2",
  "lofty_attr",
@@ -716,7 +716,7 @@ checksum = "764b60e1ddd07e5665a6a17636a95cd7d8f3b86c73503a69c32979d05f72f3cf"
 dependencies = [
  "proc-macro2",
  "quote",
-    "syn 2.0.28",
+ "syn 2.0.28",
 ]
 
 [[package]]
@@ -862,7 +862,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ccd746e37177e1711c20dd619a1620f34f5c8b569c53590a72dedd5344d8924a"
 dependencies = [
  "dlv-list",
-    "hashbrown 0.12.3",
+ "hashbrown 0.12.3",
 ]
 
 [[package]]
@@ -1136,7 +1136,7 @@ checksum = "e801c1712f48475582b7696ac71e0ca34ebb30e09338425384269d9717c62cad"
 dependencies = [
  "proc-macro2",
  "quote",
-    "syn 2.0.28",
+ "syn 2.0.28",
 ]
 
 [[package]]
@@ -1177,11 +1177,11 @@ version = "3.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1402f54f9a3b9e2efe71c1cea24e648acce55887983553eeb858cf3115acfd49"
 dependencies = [
-    "base64 0.21.2",
+ "base64 0.21.2",
  "chrono",
  "hex",
-    "indexmap 1.9.3",
-    "indexmap 2.0.0",
+ "indexmap 1.9.3",
+ "indexmap 2.0.0",
  "serde",
  "serde_json",
  "serde_with_macros",
@@ -1197,7 +1197,7 @@ dependencies = [
  "darling",
  "proc-macro2",
  "quote",
-    "syn 2.0.28",
+ "syn 2.0.28",
 ]
 
 [[package]]
@@ -1305,7 +1305,7 @@ checksum = "f9456a42c5b0d803c8cd86e73dd7cc9edd429499f37a3550d286d5e86720569f"
 dependencies = [
  "proc-macro2",
  "quote",
-    "syn 2.0.28",
+ "syn 2.0.28",
 ]
 
 [[package]]

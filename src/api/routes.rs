@@ -4,8 +4,7 @@ use axum::http::{header, StatusCode};
 use axum::response::{IntoResponse, Response};
 use axum::{
     extract::{Path, Query, State},
-    routing::get,
-    Json, Router,
+    Json,
 };
 use diesel::prelude::*;
 use duplicate::duplicate;
@@ -41,29 +40,15 @@ macro_rules! db_conn {
     };
 }
 
-pub fn api_routes() -> Router<AppState> {
-    Router::new()
-        .route("/version", get(get_version))
-        .route("/artists", get(get_artists))
-        .route("/artists/:id", get(get_artist))
-        .route("/albums", get(get_albums))
-        .route("/albums/:id", get(get_album))
-        .route("/tracks", get(get_tracks))
-        .route("/tracks/:id", get(get_track))
-        .route("/play/:id", get(play_track))
-        .route("/art/:id", get(get_art))
-        .route("/search/:query", get(unimplemented))
-}
-
-async fn unimplemented() -> Json<&'static str> {
+pub async fn unimplemented() -> Json<&'static str> {
     Json("Not Implemented yet, sorry.")
 }
 
-async fn get_version() -> Json<Version> {
+pub async fn get_version() -> Json<Version> {
     Json(Version::default())
 }
 
-async fn get_artists(
+pub async fn get_artists(
     Query(filter): Query<Filter>,
     State(state): State<AppState>,
 ) -> Result<Json<MagpieResponse>> {
@@ -109,7 +94,7 @@ async fn get_artists(
     Ok(Json(response))
 }
 
-async fn get_artist(
+pub async fn get_artist(
     Path(id): Path<i32>,
     State(state): State<AppState>,
 ) -> Result<Json<MagpieResponse>> {
@@ -142,7 +127,7 @@ async fn get_artist(
     Ok(Json(response))
 }
 
-async fn get_albums(
+pub async fn get_albums(
     Query(filter): Query<Filter>,
     State(state): State<AppState>,
 ) -> Result<Json<MagpieResponse>> {
@@ -188,7 +173,7 @@ async fn get_albums(
     Ok(Json(response))
 }
 
-async fn get_album(
+pub async fn get_album(
     Path(id): Path<i32>,
     State(state): State<AppState>,
 ) -> Result<Json<MagpieResponse>> {
@@ -221,7 +206,7 @@ async fn get_album(
     Ok(Json(response))
 }
 
-async fn get_tracks(
+pub async fn get_tracks(
     Query(filter): Query<Filter>,
     State(state): State<AppState>,
 ) -> Result<Json<MagpieResponse>> {
@@ -274,7 +259,7 @@ async fn get_tracks(
     Ok(Json(response))
 }
 
-async fn get_track(
+pub async fn get_track(
     Path(id): Path<i32>,
     State(state): State<AppState>,
 ) -> Result<Json<MagpieResponse>> {
@@ -293,7 +278,7 @@ async fn get_track(
     Ok(Json(response))
 }
 
-async fn play_track(Path(id): Path<i32>, State(state): State<AppState>) -> Result<Response> {
+pub async fn play_track(Path(id): Path<i32>, State(state): State<AppState>) -> Result<Response> {
     let mut conn = db_conn!(state);
 
     let result = Track::by_id(id, &mut conn)?;
@@ -310,7 +295,10 @@ async fn play_track(Path(id): Path<i32>, State(state): State<AppState>) -> Resul
     Ok(response)
 }
 
-async fn get_art(Path(id): Path<i32>, State(state): State<AppState>) -> Result<impl IntoResponse> {
+pub async fn get_art(
+    Path(id): Path<i32>,
+    State(state): State<AppState>,
+) -> Result<impl IntoResponse> {
     let mut conn = db_conn!(state);
 
     let result: Art = art::table

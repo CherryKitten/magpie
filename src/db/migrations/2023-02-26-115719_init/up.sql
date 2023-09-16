@@ -103,8 +103,8 @@ CREATE TABLE users
     id       INTEGER PRIMARY KEY NOT NULL,
     username TEXT                NOT NULL,
     password TEXT                NOT NULL,
+    salt TEXT NOT NULL,
     email    TEXT,
     role     TEXT                NOT NULL DEFAULT 'user',
     UNIQUE (username)
 );
-

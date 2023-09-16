@@ -94,6 +94,7 @@ diesel::table! {
         id -> Integer,
         username -> Text,
         password -> Text,
+        salt -> Text,
         email -> Nullable<Text>,
         role -> Text,
     }

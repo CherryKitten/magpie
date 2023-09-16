@@ -23,3 +23,5 @@ tower-http = { version = "0.4.0", features = ["trace", "cors"] }
 tracing-subscriber = "0.3.16"
 chrono = "0.4.24"
 walkdir = "2.3.3"
+password-hash = { version = "0.5.0", features = ["getrandom"] }
+argon2 = "0.5.2"

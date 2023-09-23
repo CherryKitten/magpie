@@ -1,9 +1,9 @@
 use log::{error, info};
-use magpie::api;
-use magpie::db::{create_connection_pool, run_migrations};
-use magpie::scheduler;
-use magpie::settings;
-use magpie::Result;
+use magpie_server::api;
+use magpie_server::db::{create_connection_pool, run_migrations};
+use magpie_server::scheduler;
+use magpie_server::settings;
+use magpie_server::Result;
 use std::collections::HashMap;
 use tokio::{spawn, try_join};
 

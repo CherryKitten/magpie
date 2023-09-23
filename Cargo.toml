@@ -1,31 +1,10 @@
-[package]
-name = "magpie"
+[workspace]
+members = ["swoop", "types", "server"]
+
+resolver = "2"
+
+[workspace.package]
 version = "0.2.0"
+authors = ["CherryKitten"]
+description = "Music streaming server"
 edition = "2021"
-
-[lib]
-name = "magpie"
-
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-config = "0.13.3"
-lofty = "0.15.0"
-serde = { version = "1.0.152", features = ["derive"] }
-diesel = { version = "2.0.3", features = ["sqlite", "returning_clauses_for_sqlite_3_35", "r2d2"] }
-diesel_migrations = "2.1.0"
-log = "0.4.17"
-anyhow = "1.0.69"
-serde_with = "3.0.0"
-duplicate = "1.0.0"
-axum = { version = "0.6.18", features = ["macros", "headers"] }
-tokio = { version = "1.26.0", features = ["full"] }
-tokio-util = { version = "0.7.7", features = ["io"] }
-tower = "0.4.13"
-tower-http = { version = "0.4.0", features = ["trace", "cors"] }
-tracing-subscriber = "0.3.16"
-chrono = "0.4.24"
-walkdir = "2.3.3"
-password-hash = { version = "0.5.0", features = ["getrandom"] }
-argon2 = "0.5.2"

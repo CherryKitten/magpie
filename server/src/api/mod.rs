@@ -1,6 +1,7 @@
 use std::net::SocketAddr;
 
 use anyhow::Context;
+use axum::body::{boxed, Body};
 use axum::extract::State;
 use axum::headers::authorization::Basic;
 use axum::headers::Authorization;
@@ -14,7 +15,8 @@ use diesel::{Identifiable, QueryDsl, Queryable, Selectable, SqliteConnection};
 use http::StatusCode;
 use log::info;
 use password_hash::{PasswordHash, PasswordHasher, PasswordVerifier};
-use tower::ServiceBuilder;
+use tower::{ServiceBuilder, ServiceExt};
+use tower_http::services::{ServeDir, ServeFile};
 use tower_http::trace::TraceLayer;
 
 use crate::api::routes::*;
@@ -38,21 +40,27 @@ pub async fn run(pool: DbPool) -> Result<()> {
         .allow_methods([Method::GET, Method::POST])
         .allow_origin(tower_http::cors::Any);
 
-    let app = Router::new()
-        .route("/api/version", get(get_version))
-        .route("/api/artists", get(get_artists))
-        .route("/api/artists/:id", get(get_artist))
-        .route("/api/albums", get(get_albums))
-        .route("/api/albums/:id", get(get_album))
-        .route("/api/tracks", get(get_tracks))
-        .route("/api/tracks/:id", get(get_track))
-        .route("/api/play/:id", get(play_track))
-        .route("/api/art/:id", get(get_art))
-        .route("/api/search/:query", get(unimplemented))
-        .route_layer(ServiceBuilder::new().layer(from_fn_with_state(state.clone(), auth)))
+    let swoop = ServeDir::new("dist").not_found_service(ServeFile::new("dist/index.html"));
+
+    let api = Router::new()
+        .route("/version", get(get_version))
+        .route("/artists", get(get_artists))
+        .route("/artists/:id", get(get_artist))
+        .route("/albums", get(get_albums))
+        .route("/albums/:id", get(get_album))
+        .route("/tracks", get(get_tracks))
+        .route("/tracks/:id", get(get_track))
+        .route("/play/:id", get(play_track))
+        .route("/art/:id", get(get_art))
+        .route("/search/:query", get(unimplemented))
+        //.route_layer(ServiceBuilder::new().layer(from_fn_with_state(state.clone(), auth)))
         .route("/api/users/create", get(unimplemented))
         .with_state(state)
-        .layer(cors)
+        .layer(cors);
+
+    let app = Router::new()
+        .nest_service("/api", api)
+        .nest_service("/web", swoop)
         .layer(TraceLayer::new_for_http());
 
     let (mut host, port) = (config.get_string("host")?, config.get_int("port")? as u16);

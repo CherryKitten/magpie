@@ -1,0 +1,32 @@
+#main {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    overflow: auto;
+}
+
+#nav {
+    background-color: rgb(128, 128, 128);
+    width: 100%;
+    z-index: 100;
+    position: absolute;
+    top: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+#player {
+    background-color: rgb(128, 128, 128);
+    width: 100%;
+    z-index: 100;
+    position: absolute;
+    bottom: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}

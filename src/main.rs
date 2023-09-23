@@ -1,18 +1,11 @@
-use std::collections::HashMap;
-
 use log::{error, info};
+use magpie::api;
+use magpie::db::{create_connection_pool, run_migrations};
+use magpie::scheduler;
+use magpie::settings;
+use magpie::Result;
+use std::collections::HashMap;
 use tokio::{spawn, try_join};
-
-pub use error::{Error, Result};
-
-use crate::db::{create_connection_pool, run_migrations};
-
-pub mod api;
-pub mod db;
-pub mod error;
-pub mod metadata;
-pub mod scheduler;
-pub mod settings;
 
 #[tokio::main]
 async fn main() -> Result<()> {
